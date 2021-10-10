@@ -12,9 +12,10 @@ import { MatchModule } from "@match/match.module";
 import { RoundModule } from "@round/round.module";
 import { DeckModule } from "@deck/deck.module";
 import { PlayerModule } from "@player/player.module";
+import { MatchRuleModule } from "@match-rule/match-rule.module";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([MatchRule, PlayerDeck]), MatchModule, RoundModule, DeckModule, PlayerModule],
+    imports: [TypeOrmModule.forFeature([MatchRule, PlayerDeck]), MatchModule, RoundModule, DeckModule, PlayerModule, MatchRuleModule],
     providers: [ReplayService, ReplayResolver],
     controllers: [ReplayController],
 })
