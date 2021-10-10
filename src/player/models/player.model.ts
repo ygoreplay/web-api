@@ -1,30 +1,39 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
+import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import PlayerDeck from "@round/models/player-deck.model";
 import Match from "@match/models/match.model";
 
+@ObjectType()
 @Entity({
     name: "players",
 })
 export default class Player extends BaseEntity {
+    @Field(() => Int)
     @PrimaryGeneratedColumn({ type: "int" })
     public id: number;
 
+    @Field(() => String)
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", nullable: true })
     public name: string;
 
+    @Field(() => String)
     @Column({ type: "varchar", length: 255 })
     public ip: string;
 
+    @Field(() => String)
     @Column({ type: "varchar", length: 255 })
     public lang: string;
 
+    @Field(() => Int)
     @Column({ type: "int" })
     public pos: number;
 
+    @Field(() => Date)
     @CreateDateColumn()
     public createdAt: Date;
 
+    @Field(() => Date)
     @UpdateDateColumn()
     public updatedAt: Date;
 

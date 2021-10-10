@@ -12,6 +12,7 @@ import { RoundService } from "@round/round.service";
 import { DeckService } from "@deck/deck.service";
 import { PlayerService, RawPlayerInformation } from "@player/player.service";
 import Deck from "@deck/models/deck.model";
+import { MatchType } from "@match/models/match.model";
 
 interface HeaderData {
     roomSettings: {
@@ -105,7 +106,7 @@ export class ReplayService {
             }
 
             return this.matchService.create(
-                headerData.type || "normal",
+                headerData.type || MatchType.Normal,
                 headerData.isRandomMatch,
                 rounds,
                 posPlayerPairs.map(p => p[1]),

@@ -1,15 +1,19 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
+import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import PlayerDeck from "@round/models/player-deck.model";
 import Match from "@match/models/match.model";
 
+@ObjectType()
 @Entity({
     name: "rounds",
 })
 export default class Round extends BaseEntity {
+    @Field(() => Int)
     @PrimaryGeneratedColumn({ type: "int" })
     public id: number;
 
+    @Field(() => Int)
     @Column({ type: "int" })
     public no: number;
 
@@ -19,15 +23,19 @@ export default class Round extends BaseEntity {
     @Column({ type: "varchar", length: 255 })
     public from: string;
 
+    @Field(() => Date)
     @Column({ type: "datetime" })
     public startedAt: Date;
 
+    @Field(() => Date)
     @Column({ type: "datetime" })
     public finishedAt: Date;
 
+    @Field(() => Date)
     @CreateDateColumn()
     public createdAt: Date;
 
+    @Field(() => Date)
     @UpdateDateColumn()
     public updatedAt: Date;
 

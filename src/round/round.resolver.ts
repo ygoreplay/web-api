@@ -1,4 +1,6 @@
 import { Resolver } from "@nestjs/graphql";
 
-@Resolver()
+import Round from "@round/models/round.model";
+
+@Resolver(() => Round)
 export class RoundResolver {}
