@@ -1,7 +1,7 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToMany, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 
-import PlayerDeck from "src/replay/models/player-deck.model";
-import Match from "src/replay/models/match.model";
+import PlayerDeck from "@round/models/player-deck.model";
+import Match from "@match/models/match.model";
 
 @Entity({
     name: "players",
