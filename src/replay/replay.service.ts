@@ -72,6 +72,10 @@ export class ReplayService {
         @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
 
+    public async find() {
+        return this.matchRepository.find();
+    }
+
     public async registerReplayData(buffer: Buffer, from: string) {
         try {
             const headerLength = buffer.readUInt32BE(0);
@@ -163,7 +167,6 @@ export class ReplayService {
 
         return this.deckRepository.save(deck);
     }
-
     private async getOrCreatePlayer(playerData: HeaderData["players"][0]): Promise<Player> {
         let player = await this.playerRepository.findOne({
             where: {
@@ -185,7 +188,6 @@ export class ReplayService {
 
         return player;
     }
-
     private async getOrCreateMatchRule(roomSettings: HeaderData["roomSettings"]) {
         let matchRule = await this.matchRuleRepository.findOne({
             where: {
