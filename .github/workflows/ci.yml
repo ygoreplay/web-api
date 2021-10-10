@@ -64,11 +64,11 @@ jobs:
             - name: Build, tag, and push image to Amazon ECR
               env:
                   ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-                  ECR_REPOSITORY: ${{ github.event.repository.name }}
+                  ECR_REPOSITORY: ygoreplay-web-api
                   IMAGE_TAG: ${{ github.sha }}
                   DOCKER_BUILDKIT: 1
               run: |
-                  docker build -t $ECR_REGISTRY/ygoreplay-web-api:$IMAGE_TAG --ssh default .
-                  docker build -t $ECR_REGISTRY/ygoreplay-web-api:latest --ssh default .
+                  docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --ssh default .
+                  docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest --ssh default .
                   docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
                   docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
