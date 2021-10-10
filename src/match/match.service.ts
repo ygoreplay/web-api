@@ -1,4 +1,4 @@
-import { Repository } from "typeorm";
+import { MoreThan, Repository } from "typeorm";
 import * as moment from "moment";
 
 import { Injectable } from "@nestjs/common";
@@ -13,6 +13,20 @@ import MatchRule from "@replay/models/match-rule.model";
 @Injectable()
 export class MatchService {
     public constructor(@InjectRepository(Match) private readonly matchRepository: Repository<Match>) {}
+
+    public find(count: number, after?: Match["id"]) {
+        return this.matchRepository.find({
+            where: after
+                ? {
+                      id: MoreThan(after),
+                  }
+                : {},
+            take: count,
+            order: {
+                id: "DESC",
+            },
+        });
+    }
 
     public async create(
         type: Match["type"] = "normal",
