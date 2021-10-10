@@ -1,30 +1,17 @@
-import * as moment from "moment";
 import { Repository } from "typeorm";
-import * as fs from "fs-extra";
-import * as path from "path";
 
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
-import Match from "@replay/models/match.model";
 import MatchRule from "@replay/models/match-rule.model";
-import Round from "@replay/models/round.model";
-import Player from "@replay/models/player.model";
-import Deck from "@replay/models/deck.model";
-import PlayerDeck from "@replay/models/player-deck.model";
+import Round from "@round/models/round.model";
+import Player from "@player/models/player.model";
 
-interface RawPlayerInformation {
-    ip: string;
-    name: string;
-    joinTime: string; //'2021-07-04 00:44:19',
-    pos: number;
-    lang: string; // "ko-kr";
-    pass: string; // "M#123";
-    sidedDeck: Array<{
-        main: number[];
-        side: number[];
-    }>;
-}
+import { MatchService } from "@match/match.service";
+import { RoundService } from "@round/round.service";
+import { DeckService } from "@deck/deck.service";
+import { PlayerService, RawPlayerInformation } from "@player/player.service";
+import Deck from "@deck/models/deck.model";
 
 interface HeaderData {
     roomSettings: {
@@ -49,27 +36,16 @@ interface HeaderData {
     type?: "normal" | "athletic" | "entertain";
 }
 
-const REPLAY_STORAGE_PATH = path.join(process.cwd(), "./replays");
-fs.ensureDirSync(REPLAY_STORAGE_PATH);
-
 @Injectable()
 export class ReplayService {
     private static readonly logger: Logger = new Logger(ReplayService.name);
 
-    private static async saveReplayFile(id: number, data: Buffer) {
-        const targetPath = path.join(REPLAY_STORAGE_PATH, `./${id}.yrp`);
-        await fs.promises.writeFile(targetPath, data);
-
-        return targetPath;
-    }
-
     public constructor(
+        @Inject(MatchService) private readonly matchService: MatchService,
+        @Inject(RoundService) private readonly roundService: RoundService,
+        @Inject(DeckService) private readonly deckService: DeckService,
+        @Inject(PlayerService) private readonly playerService: PlayerService,
         @InjectRepository(MatchRule) private readonly matchRuleRepository: Repository<MatchRule>,
-        @InjectRepository(Match) private readonly matchRepository: Repository<Match>,
-        @InjectRepository(Round) private readonly roundRepository: Repository<Round>,
-        @InjectRepository(Player) private readonly playerRepository: Repository<Player>,
-        @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
-        @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
 
     public async registerReplayData(buffer: Buffer, from: string) {
@@ -110,83 +86,37 @@ export class ReplayService {
             const posPlayerPairs: [pos: number, player: Player][] = [];
             const rounds: Round[] = [];
             for (let i = 0; i < replayDataArray.length; i++) {
-                const playerDecks: PlayerDeck[] = [];
+                const playerDecks: [Player, Deck][] = [];
                 for (const playerData of headerData.players) {
                     const { main, side } = playerData.sidedDeck[i];
-                    const deck = await this.registerDeck(main, side);
+                    const deck = await this.deckService.create(main, side);
 
                     let posPlayerPair = posPlayerPairs.find(ppp => ppp[0] === playerData.pos);
                     if (!posPlayerPair) {
-                        posPlayerPair = [playerData.pos, await this.getOrCreatePlayer(playerData)];
+                        posPlayerPair = [playerData.pos, await this.playerService.ensure(playerData)];
                         posPlayerPairs.push(posPlayerPair);
                     }
 
-                    const player = posPlayerPair[1];
-                    const playerDeck = this.playerDeckRepository.create();
-                    playerDeck.player = player;
-                    playerDeck.deck = deck;
-                    playerDecks.push(await this.playerDeckRepository.save(playerDeck));
+                    playerDecks.push([posPlayerPair[1], deck]);
                 }
 
-                let round = this.roundRepository.create();
-                round.replayFilePath = "";
-                round.no = i;
-                round.from = from;
-                round.startedAt = moment.unix(headerData.startedAt[i]).toDate();
-                round.finishedAt = moment.unix(headerData.finishedAt[i]).toDate();
-                round.playerDecks = playerDecks;
-                round = await this.roundRepository.save(round);
-
-                round.replayFilePath = await ReplayService.saveReplayFile(round.id, replayDataArray[i]);
-                round = await this.roundRepository.save(round);
-
+                const round = await this.roundService.create(i, from, headerData.startedAt[i], headerData.finishedAt[i], playerDecks, replayDataArray[i]);
                 rounds.push(round);
             }
 
-            const match = this.matchRepository.create();
-            match.rounds = rounds;
-            match.type = headerData.type || "normal";
-            match.isRandomMatch = headerData.isRandomMatch;
-            match.players = posPlayerPairs.map(p => p[1]);
-            match.startedAt = moment.unix(headerData.startedAt[0]).toDate();
-            match.finishedAt = moment.unix(headerData.finishedAt.pop()).toDate();
-            match.matchRule = await this.getOrCreateMatchRule(headerData.roomSettings);
-
-            await this.matchRepository.save(match);
+            return this.matchService.create(
+                headerData.type || "normal",
+                headerData.isRandomMatch,
+                rounds,
+                posPlayerPairs.map(p => p[1]),
+                headerData.startedAt[0],
+                headerData.finishedAt.pop(),
+                await this.getOrCreateMatchRule(headerData.roomSettings),
+            );
         } catch (e) {
             ReplayService.logger.error("Catched an exception during process match data:");
             console.error(e);
         }
-    }
-
-    private async registerDeck(main: number[], side: number[]): Promise<Deck> {
-        const deck = await this.deckRepository.create();
-        deck.main = main;
-        deck.side = side;
-
-        return this.deckRepository.save(deck);
-    }
-
-    private async getOrCreatePlayer(playerData: HeaderData["players"][0]): Promise<Player> {
-        let player = await this.playerRepository.findOne({
-            where: {
-                name: playerData.name,
-                ip: playerData.ip,
-                lang: playerData.lang,
-                pos: playerData.pos,
-            },
-        });
-
-        if (!player) {
-            player = this.playerRepository.create();
-            player.ip = playerData.ip;
-            player.name = playerData.name;
-            player.lang = playerData.lang;
-            player.pos = playerData.pos;
-            player = await this.playerRepository.save(player);
-        }
-
-        return player;
     }
 
     private async getOrCreateMatchRule(roomSettings: HeaderData["roomSettings"]) {

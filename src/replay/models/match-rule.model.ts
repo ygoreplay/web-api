@@ -1,6 +1,6 @@
 import { BaseEntity, Column, Entity, OneToMany, PrimaryGeneratedColumn, RelationId } from "typeorm";
 
-import Match from "src/replay/models/match.model";
+import Match from "@match/models/match.model";
 
 @Entity({
     name: "match-rules",

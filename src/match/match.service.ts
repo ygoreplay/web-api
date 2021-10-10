@@ -6,8 +6,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 
 import Match from "@match/models/match.model";
 
-import Round from "@replay/models/round.model";
-import Player from "@replay/models/player.model";
+import Round from "@round/models/round.model";
+import Player from "@player/models/player.model";
 import MatchRule from "@replay/models/match-rule.model";
 
 @Injectable()

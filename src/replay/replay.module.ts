@@ -5,15 +5,16 @@ import { ReplayService } from "@replay/replay.service";
 import { ReplayController } from "@replay/replay.controller";
 import { ReplayResolver } from "@replay/replay.resolver";
 
-import Player from "@replay/models/player.model";
-import Round from "@replay/models/round.model";
-import Deck from "@replay/models/deck.model";
 import MatchRule from "@replay/models/match-rule.model";
-import PlayerDeck from "@replay/models/player-deck.model";
-import Match from "@replay/models/match.model";
+import PlayerDeck from "@round/models/player-deck.model";
+
+import { MatchModule } from "@match/match.module";
+import { RoundModule } from "@round/round.module";
+import { DeckModule } from "@deck/deck.module";
+import { PlayerModule } from "@player/player.module";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([MatchRule, Match, Round, Player, Deck, PlayerDeck])],
+    imports: [TypeOrmModule.forFeature([MatchRule, PlayerDeck]), MatchModule, RoundModule, DeckModule, PlayerModule],
     providers: [ReplayService, ReplayResolver],
     controllers: [ReplayController],
 })

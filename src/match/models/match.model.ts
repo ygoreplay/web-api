@@ -13,8 +13,8 @@ import {
 } from "typeorm";
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 
-import Round from "@replay/models/round.model";
-import Player from "@replay/models/player.model";
+import Round from "@round/models/round.model";
+import Player from "@player/models/player.model";
 import MatchRule from "@replay/models/match-rule.model";
 
 @ObjectType()

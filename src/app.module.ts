@@ -6,6 +6,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { GraphQLModule } from "@nestjs/graphql";
 
 import { ReplayModule } from "@replay/replay.module";
+import { MatchModule } from "@match/match.module";
+import { RoundModule } from "@round/round.module";
+import { DeckModule } from "@deck/deck.module";
+import { PlayerModule } from "@player/player.module";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
@@ -37,6 +41,10 @@ delete (config as any).entities;
             inject: [],
         }),
         ReplayModule,
+        MatchModule,
+        RoundModule,
+        DeckModule,
+        PlayerModule,
     ],
     controllers: [],
     providers: [],
