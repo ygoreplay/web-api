@@ -42,11 +42,11 @@ export class RoundService {
         return this.roundRepository.save(round);
     }
 
-    private generatePlayerDeck(playerDeck: [Player, Deck]) {
+    private generatePlayerDeck = (playerDeck: [Player, Deck]) => {
         const pd = this.playerDeckRepository.create();
         pd.player = playerDeck[0];
         pd.deck = playerDeck[1];
 
         return pd;
-    }
+    };
 }
