@@ -23,6 +23,7 @@
             "@round/*": ["./src/round/*"],
             "@deck/*": ["./src/deck/*"],
             "@player/*": ["./src/player/*"],
+            "@match-rule/*": ["./src/match-rule/*"],
             "@root/*": ["./src/*"]
         }
     }

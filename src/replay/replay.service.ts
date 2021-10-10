@@ -1,35 +1,18 @@
-import { Repository } from "typeorm";
-
 import { Inject, Injectable, Logger } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-
-import MatchRule from "@replay/models/match-rule.model";
-import Round from "@round/models/round.model";
-import Player from "@player/models/player.model";
 
 import { MatchService } from "@match/match.service";
 import { RoundService } from "@round/round.service";
 import { DeckService } from "@deck/deck.service";
 import { PlayerService, RawPlayerInformation } from "@player/player.service";
+
+import Round from "@round/models/round.model";
+import Player from "@player/models/player.model";
 import Deck from "@deck/models/deck.model";
 import { MatchType } from "@match/models/match.model";
+import { MatchRuleService, RawRoomSettings } from "@match-rule/match-rule.service";
 
 interface HeaderData {
-    roomSettings: {
-        lflist: {
-            date: string;
-            tcg: boolean;
-        };
-        rule: number;
-        mode: number;
-        duel_rule: number;
-        no_check_deck: boolean;
-        no_shuffle_deck: boolean;
-        start_lp: number;
-        start_hand: number;
-        draw_count: number;
-        time_limit: number;
-    };
+    roomSettings: RawRoomSettings;
     players: RawPlayerInformation[];
     startedAt: number[];
     finishedAt: number[];
@@ -46,7 +29,7 @@ export class ReplayService {
         @Inject(RoundService) private readonly roundService: RoundService,
         @Inject(DeckService) private readonly deckService: DeckService,
         @Inject(PlayerService) private readonly playerService: PlayerService,
-        @InjectRepository(MatchRule) private readonly matchRuleRepository: Repository<MatchRule>,
+        @Inject(MatchRuleService) private readonly matchRuleService: MatchRuleService,
     ) {}
 
     public async registerReplayData(buffer: Buffer, from: string) {
@@ -112,47 +95,11 @@ export class ReplayService {
                 posPlayerPairs.map(p => p[1]),
                 headerData.startedAt[0],
                 headerData.finishedAt.pop(),
-                await this.getOrCreateMatchRule(headerData.roomSettings),
+                await this.matchRuleService.ensure(headerData.roomSettings),
             );
         } catch (e) {
             ReplayService.logger.error("Catched an exception during process match data:");
             console.error(e);
         }
-    }
-
-    private async getOrCreateMatchRule(roomSettings: HeaderData["roomSettings"]) {
-        let matchRule = await this.matchRuleRepository.findOne({
-            where: {
-                banListDate: roomSettings.lflist.date,
-                isTCG: roomSettings.lflist.tcg,
-                rule: roomSettings.rule,
-                mode: roomSettings.mode,
-                duelRule: roomSettings.duel_rule,
-                preventCheckDeck: roomSettings.no_check_deck,
-                preventShuffleDeck: roomSettings.no_shuffle_deck,
-                startLifePoint: roomSettings.start_lp,
-                startHand: roomSettings.start_hand,
-                drawCount: roomSettings.draw_count,
-                timeLimit: roomSettings.time_limit,
-            },
-        });
-
-        if (!matchRule) {
-            matchRule = this.matchRuleRepository.create();
-            matchRule.banListDate = roomSettings.lflist.date;
-            matchRule.isTCG = roomSettings.lflist.tcg;
-            matchRule.rule = roomSettings.rule;
-            matchRule.mode = roomSettings.mode;
-            matchRule.duelRule = roomSettings.duel_rule;
-            matchRule.preventCheckDeck = roomSettings.no_check_deck;
-            matchRule.preventShuffleDeck = roomSettings.no_shuffle_deck;
-            matchRule.startLifePoint = roomSettings.start_lp;
-            matchRule.startHand = roomSettings.start_hand;
-            matchRule.drawCount = roomSettings.draw_count;
-            matchRule.timeLimit = roomSettings.time_limit;
-            matchRule = await this.matchRuleRepository.save(matchRule);
-        }
-
-        return matchRule;
     }
 }

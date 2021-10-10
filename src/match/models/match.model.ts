@@ -15,7 +15,7 @@ import { Field, Int, ObjectType, registerEnumType } from "@nestjs/graphql";
 
 import Round from "@round/models/round.model";
 import Player from "@player/models/player.model";
-import MatchRule from "@replay/models/match-rule.model";
+import MatchRule from "@match-rule/models/match-rule.model";
 
 export enum MatchType {
     Normal = "normal",

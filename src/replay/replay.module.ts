@@ -5,7 +5,7 @@ import { ReplayService } from "@replay/replay.service";
 import { ReplayController } from "@replay/replay.controller";
 import { ReplayResolver } from "@replay/replay.resolver";
 
-import MatchRule from "@replay/models/match-rule.model";
+import MatchRule from "@match-rule/models/match-rule.model";
 import PlayerDeck from "@round/models/player-deck.model";
 
 import { MatchModule } from "@match/match.module";
