@@ -1,7 +1,7 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 
-import PlayerDeck from "src/replay/models/player-deck.model";
-import Match from "src/replay/models/match.model";
+import PlayerDeck from "@round/models/player-deck.model";
+import Match from "@match/models/match.model";
 
 @Entity({
     name: "rounds",
@@ -43,7 +43,7 @@ export default class Round extends BaseEntity {
     //
     // Relation (One-to-Many) - PlayerDeck => Match
     //
-    @OneToMany(() => PlayerDeck, playerDeck => playerDeck.match)
+    @OneToMany(() => PlayerDeck, playerDeck => playerDeck.match, { cascade: true })
     public playerDecks!: PlayerDeck[];
 
     @RelationId((entity: Round) => entity.playerDecks)
