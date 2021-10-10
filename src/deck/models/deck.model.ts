@@ -1,6 +1,6 @@
 import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 
-import PlayerDeck from "src/replay/models/player-deck.model";
+import PlayerDeck from "@round/models/player-deck.model";
 
 @Entity({
     name: "decks",
