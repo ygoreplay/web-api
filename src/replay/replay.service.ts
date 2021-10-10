@@ -72,10 +72,6 @@ export class ReplayService {
         @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
 
-    public async find() {
-        return this.matchRepository.find();
-    }
-
     public async registerReplayData(buffer: Buffer, from: string) {
         try {
             const headerLength = buffer.readUInt32BE(0);
@@ -129,17 +125,20 @@ export class ReplayService {
                     const playerDeck = this.playerDeckRepository.create();
                     playerDeck.player = player;
                     playerDeck.deck = deck;
-                    playerDecks.push(playerDeck);
+                    playerDecks.push(await this.playerDeckRepository.save(playerDeck));
                 }
 
-                const round = this.roundRepository.create();
+                let round = this.roundRepository.create();
                 round.replayFilePath = "";
                 round.no = i;
                 round.from = from;
                 round.startedAt = moment.unix(headerData.startedAt[i]).toDate();
                 round.finishedAt = moment.unix(headerData.finishedAt[i]).toDate();
                 round.playerDecks = playerDecks;
+                round = await this.roundRepository.save(round);
+
                 round.replayFilePath = await ReplayService.saveReplayFile(round.id, replayDataArray[i]);
+                round = await this.roundRepository.save(round);
 
                 rounds.push(round);
             }
@@ -167,6 +166,7 @@ export class ReplayService {
 
         return this.deckRepository.save(deck);
     }
+
     private async getOrCreatePlayer(playerData: HeaderData["players"][0]): Promise<Player> {
         let player = await this.playerRepository.findOne({
             where: {
@@ -188,6 +188,7 @@ export class ReplayService {
 
         return player;
     }
+
     private async getOrCreateMatchRule(roomSettings: HeaderData["roomSettings"]) {
         let matchRule = await this.matchRuleRepository.findOne({
             where: {
@@ -218,6 +219,7 @@ export class ReplayService {
             matchRule.startHand = roomSettings.start_hand;
             matchRule.drawCount = roomSettings.draw_count;
             matchRule.timeLimit = roomSettings.time_limit;
+            matchRule = await this.matchRuleRepository.save(matchRule);
         }
 
         return matchRule;
