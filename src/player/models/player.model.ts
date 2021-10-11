@@ -3,6 +3,7 @@ import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import PlayerDeck from "@round/models/player-deck.model";
 import Match from "@match/models/match.model";
+import Round from "@round/models/round.model";
 
 @ObjectType()
 @Entity({
@@ -36,6 +37,24 @@ export default class Player extends BaseEntity {
     @Field(() => Date)
     @UpdateDateColumn()
     public updatedAt: Date;
+
+    //
+    // Relation (One-to-Many) - Round => Player
+    //
+    @OneToMany(() => Round, wonRound => wonRound.winner)
+    public wonRounds!: Round[];
+
+    @RelationId((entity: Player) => entity.wonRounds)
+    public wonRoundIds!: Round["id"][];
+
+    //
+    // Relation (One-to-Many) - Match => Player
+    //
+    @OneToMany(() => Match, wonMatch => wonMatch.winner)
+    public wonMatches!: Match[];
+
+    @RelationId((entity: Player) => entity.wonMatches)
+    public wonMatcheIds!: Match["id"][];
 
     //
     // Relation (One-to-Many) - PlayerDeck => Player

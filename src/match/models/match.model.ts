@@ -59,6 +59,15 @@ export default class Match extends BaseEntity {
     public updatedAt: Date;
 
     //
+    // Relation (Many-to-One) - Player => Match
+    //
+    @ManyToOne(() => Player, winner => winner.wonMatches)
+    public winner!: Player;
+
+    @RelationId((entity: Match) => entity.winner)
+    public winnerId!: Player["id"];
+
+    //
     // Relation (One-to-Many) - Round => Match
     //
     @Field(() => [Round])

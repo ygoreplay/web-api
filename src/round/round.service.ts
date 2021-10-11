@@ -28,7 +28,15 @@ export class RoundService {
         @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
 
-    public async create(no: number, from: string, startedAt: number, finishedAt: number, playerDecks: [Player, Deck][], replayData: Buffer) {
+    public async create(
+        no: number,
+        from: string,
+        startedAt: number,
+        finishedAt: number,
+        playerDecks: [Player, Deck][],
+        replayData: Buffer,
+        winnerPlayer: Player,
+    ) {
         let round = this.roundRepository.create();
         round.replayFilePath = "";
         round.no = no;
@@ -36,6 +44,7 @@ export class RoundService {
         round.startedAt = moment.unix(startedAt).toDate();
         round.finishedAt = moment.unix(finishedAt).toDate();
         round.playerDecks = playerDecks.map(this.generatePlayerDeck);
+        round.winner = winnerPlayer;
         round = await this.roundRepository.save(round);
 
         round.replayFilePath = await RoundService.saveReplayFile(round.id, replayData);

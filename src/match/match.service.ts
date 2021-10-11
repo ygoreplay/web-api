@@ -52,6 +52,7 @@ export class MatchService {
         startedAt: number,
         finishedAt: number,
         matchRule: MatchRule,
+        winner: Player,
     ) {
         const match = this.matchRepository.create();
         match.rounds = rounds;
@@ -61,6 +62,7 @@ export class MatchService {
         match.startedAt = moment.unix(startedAt).toDate();
         match.finishedAt = moment.unix(finishedAt).toDate();
         match.matchRule = matchRule;
+        match.winner = winner;
 
         return this.matchRepository.save(match);
     }

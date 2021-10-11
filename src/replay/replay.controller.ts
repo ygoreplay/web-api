@@ -20,7 +20,7 @@ export class ReplayController {
         try {
             await this.replayService.registerReplayData(file.buffer, Array.isArray(ipAddress) ? ipAddress[0] : ipAddress);
         } catch (e) {
-            return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: e.message };
+            return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: (e as Error).message };
         }
 
         return { status: HttpStatus.OK };

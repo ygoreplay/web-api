@@ -1,3 +1,4 @@
+import * as _ from "lodash";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 
 import { MatchService } from "@match/match.service";
@@ -18,6 +19,8 @@ interface HeaderData {
     finishedAt: number[];
     isRandomMatch: boolean;
     type?: "normal" | "athletic" | "entertain";
+    winnerNames?: string[];
+    scores?: { [playerName: string]: number };
 }
 
 @Injectable()
@@ -58,7 +61,12 @@ export class ReplayService {
 
             // 실제로 플레이한 라운드 수 보다 데이터가 적다면 부정 데이터이므로 처리하지 않도록 한다.
             const roundCount = replayDataArray.length;
-            if (headerData.startedAt.length !== roundCount || headerData.finishedAt.length !== roundCount) {
+            if (
+                headerData.startedAt.length !== roundCount ||
+                headerData.finishedAt.length !== roundCount ||
+                !headerData.winnerNames ||
+                headerData.winnerNames.length !== roundCount
+            ) {
                 throw new Error("round replay data and timing data count is not matching.");
             }
 
@@ -84,10 +92,27 @@ export class ReplayService {
                     playerDecks.push([posPlayerPair[1], deck]);
                 }
 
-                const round = await this.roundService.create(i, from, headerData.startedAt[i], headerData.finishedAt[i], playerDecks, replayDataArray[i]);
+                const winnerName = headerData.winnerNames[i];
+                const winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName);
+                const round = await this.roundService.create(
+                    i,
+                    from,
+                    headerData.startedAt[i],
+                    headerData.finishedAt[i],
+                    playerDecks,
+                    replayDataArray[i],
+                    winnerPlayer,
+                );
+
                 rounds.push(round);
             }
 
+            const winnerName = _.chain(headerData.scores)
+                .entries()
+                .sortBy(p => p[1])
+                .reverse()
+                .value()[0][0];
+            const winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName);
             return this.matchService.create(
                 headerData.type || MatchType.Normal,
                 headerData.isRandomMatch,
@@ -96,6 +121,7 @@ export class ReplayService {
                 headerData.startedAt[0],
                 headerData.finishedAt.pop(),
                 await this.matchRuleService.ensure(headerData.roomSettings),
+                winnerPlayer,
             );
         } catch (e) {
             ReplayService.logger.error("Catched an exception during process match data:");
