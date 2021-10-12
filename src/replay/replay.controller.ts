@@ -1,6 +1,6 @@
 import { Request } from "express";
 import fetch from "node-fetch";
-import FormData from "form-data";
+import * as FormData from "form-data";
 
 import { Controller, HttpStatus, Inject, Logger, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
