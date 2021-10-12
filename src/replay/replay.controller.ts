@@ -1,4 +1,6 @@
 import { Request } from "express";
+import fetch from "node-fetch";
+import FormData from "form-data";
 
 import { Controller, HttpStatus, Inject, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -22,6 +24,21 @@ export class ReplayController {
         } catch (e) {
             return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: (e as Error).message };
         }
+
+        try {
+            if (process.env.NODE_ENV === "production") {
+                const formData = new FormData();
+                formData.append("data", file.buffer, {
+                    filename: "data.bin",
+                });
+
+                await fetch("https://ygoreplay.jp.ngrok.io/replay/upload", {
+                    method: "POST",
+                    body: formData,
+                    headers: formData.getHeaders(),
+                });
+            }
+        } catch {}
 
         return { status: HttpStatus.OK };
     }
