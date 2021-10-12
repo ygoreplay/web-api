@@ -2,13 +2,15 @@ import { Request } from "express";
 import fetch from "node-fetch";
 import FormData from "form-data";
 
-import { Controller, HttpStatus, Inject, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Controller, HttpStatus, Inject, Logger, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 
 import { ReplayService } from "./replay.service";
 
 @Controller("replay")
 export class ReplayController {
+    private readonly logger = new Logger(ReplayController.name);
+
     constructor(@Inject(ReplayService) private readonly replayService: ReplayService) {}
 
     @Post("/upload")
@@ -30,8 +32,12 @@ export class ReplayController {
                     body: formData,
                     headers: formData.getHeaders(),
                 });
+
+                this.logger.log("Succeeded to relay replay data to the development server.");
             }
-        } catch (e) {}
+        } catch (e) {
+            this.logger.error(`Failed to relay replay data to the development server: ${(e as Error).message}`);
+        }
 
         const ipAddress = req.headers["x-real-ip"] || req.connection.remoteAddress;
         try {
