@@ -18,13 +18,6 @@ export class ReplayController {
             return { status: HttpStatus.NOT_FOUND };
         }
 
-        const ipAddress = req.headers["x-real-ip"] || req.connection.remoteAddress;
-        try {
-            await this.replayService.registerReplayData(file.buffer, Array.isArray(ipAddress) ? ipAddress[0] : ipAddress);
-        } catch (e) {
-            return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: (e as Error).message };
-        }
-
         try {
             if (process.env.NODE_ENV === "production") {
                 const formData = new FormData();
@@ -38,7 +31,14 @@ export class ReplayController {
                     headers: formData.getHeaders(),
                 });
             }
-        } catch {}
+        } catch (e) {}
+
+        const ipAddress = req.headers["x-real-ip"] || req.connection.remoteAddress;
+        try {
+            await this.replayService.registerReplayData(file.buffer, Array.isArray(ipAddress) ? ipAddress[0] : ipAddress);
+        } catch (e) {
+            return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: (e as Error).message };
+        }
 
         return { status: HttpStatus.OK };
     }
