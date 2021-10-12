@@ -23,6 +23,7 @@ delete (config as any).entities;
         GraphQLModule.forRootAsync({
             imports: [],
             useFactory: () => ({
+                path: "/",
                 installSubscriptionHandlers: true,
                 autoSchemaFile:
                     process.env.NODE_ENV !== "production"
