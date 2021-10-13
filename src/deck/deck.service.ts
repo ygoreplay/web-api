@@ -16,16 +16,21 @@ export class DeckService {
         deck.main = main;
         deck.side = side;
 
-        const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
-        const formData = new FormData();
-        formData.append("deck", [...deck.main, "!side", ...deck.side].join("\n"));
+        try {
+            const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
+            const formData = new FormData();
+            formData.append("deck", [...deck.main, "!side", ...deck.side].join("\n"));
 
-        const data: { deck: string; tag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
-            method: "POST",
-            body: formData,
-        }).then(res => res.json());
+            const data: { deck: string; tag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
+                method: "POST",
+                body: formData,
+            }).then(res => res.json());
 
-        deck.recognizedName = data.deck;
+            deck.recognizedName = data.deck;
+        } catch {
+            deck.recognizedName = "unknown deck";
+        }
+
         return this.deckRepository.save(deck);
     }
 
