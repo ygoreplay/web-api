@@ -5,10 +5,10 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import Match, { MatchType } from "@match/models/match.model";
-
 import Round from "@round/models/round.model";
 import Player from "@player/models/player.model";
 import MatchRule from "@match-rule/models/match-rule.model";
+
 import { pubSub } from "@root/pubsub";
 
 @Injectable()
@@ -44,6 +44,9 @@ export class MatchService {
             },
         });
     }
+    public count() {
+        return this.matchRepository.count();
+    }
 
     public async create(
         type: Match["type"] | string = MatchType.Normal,
@@ -67,6 +70,7 @@ export class MatchService {
 
         const result = this.matchRepository.save(match);
         await pubSub.publish("newMatchCreated", { newMatchCreated: result });
+        await pubSub.publish("matchCountUpdated", { matchCountUpdated: await this.count() });
 
         return result;
     }

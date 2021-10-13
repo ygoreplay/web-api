@@ -18,6 +18,11 @@ export class MatchResolver {
         return this.matchService.find(count, after);
     }
 
+    @Query(() => Int)
+    public async matchCount() {
+        return this.matchService.count();
+    }
+
     @ResolveField(() => [Round])
     public async rounds(@Root() match: Match) {
         return this.roundService.findByIds(match.roundIds);
@@ -26,5 +31,10 @@ export class MatchResolver {
     @Subscription(() => Match)
     public async newMatchCreated() {
         return pubSub.asyncIterator("newMatchCreated");
+    }
+
+    @Subscription(() => Int)
+    public async matchCountUpdated() {
+        return pubSub.asyncIterator("matchCountUpdated");
     }
 }
