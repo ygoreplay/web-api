@@ -9,6 +9,7 @@ import Match, { MatchType } from "@match/models/match.model";
 import Round from "@round/models/round.model";
 import Player from "@player/models/player.model";
 import MatchRule from "@match-rule/models/match-rule.model";
+import { pubSub } from "@root/pubsub";
 
 @Injectable()
 export class MatchService {
@@ -64,6 +65,9 @@ export class MatchService {
         match.matchRule = matchRule;
         match.winner = winner;
 
-        return this.matchRepository.save(match);
+        const result = this.matchRepository.save(match);
+        await pubSub.publish("newMatchCreated", { newMatchCreated: result });
+
+        return result;
     }
 }

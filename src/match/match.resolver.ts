@@ -1,11 +1,13 @@
 import { Inject } from "@nestjs/common";
-import { Args, Int, Query, ResolveField, Resolver, Root } from "@nestjs/graphql";
+import { Args, Int, Query, ResolveField, Resolver, Root, Subscription } from "@nestjs/graphql";
 
 import { MatchService } from "@match/match.service";
-
 import Match from "@match/models/match.model";
-import Round from "@round/models/round.model";
+
 import { RoundService } from "@round/round.service";
+import Round from "@round/models/round.model";
+
+import { pubSub } from "@root/pubsub";
 
 @Resolver(() => Match)
 export class MatchResolver {
@@ -19,5 +21,10 @@ export class MatchResolver {
     @ResolveField(() => [Round])
     public async rounds(@Root() match: Match) {
         return this.roundService.findByIds(match.roundIds);
+    }
+
+    @Subscription(() => Match)
+    public async newMatchCreated() {
+        return pubSub.asyncIterator("newMatchCreated");
     }
 }
