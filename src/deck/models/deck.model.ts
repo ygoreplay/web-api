@@ -21,7 +21,7 @@ export default class Deck extends BaseEntity {
     public side: number[];
 
     @Field(() => String)
-    @Column({ type: "varchar", length: 255 })
+    @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
     public recognizedName!: string;
 
     @Field(() => Date)
