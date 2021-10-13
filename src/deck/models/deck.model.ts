@@ -20,6 +20,10 @@ export default class Deck extends BaseEntity {
     @Column({ type: "simple-array" })
     public side: number[];
 
+    @Field(() => String)
+    @Column({ type: "varchar", length: 255 })
+    public recognizedName!: string;
+
     @Field(() => Date)
     @CreateDateColumn()
     public createdAt: Date;
