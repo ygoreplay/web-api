@@ -41,4 +41,12 @@ export class PlayerService {
 
         return player;
     }
+
+    public async findById(playerId: Player["id"]) {
+        return this.playerRepository.findOne({
+            where: {
+                id: playerId,
+            },
+        });
+    }
 }

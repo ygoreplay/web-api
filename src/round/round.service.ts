@@ -28,6 +28,14 @@ export class RoundService {
         @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
 
+    public async findByIds(ids: Round["id"][]) {
+        return this.roundRepository.findByIds(ids);
+    }
+
+    public async getPlayerDecks(round: Round) {
+        return await this.playerDeckRepository.findByIds(round.playerDeckIds);
+    }
+
     public async create(
         no: number,
         from: string,

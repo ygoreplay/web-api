@@ -28,4 +28,12 @@ export class DeckService {
         deck.recognizedName = data.deck;
         return this.deckRepository.save(deck);
     }
+
+    public findById(deckId: Deck["id"]) {
+        return this.deckRepository.findOne({
+            where: {
+                id: deckId,
+            },
+        });
+    }
 }
