@@ -55,7 +55,14 @@ export class ReplayService {
             }
 
             // 필요한 데이터가 없으면 처리가 불가능하다.
-            if (!headerData || !headerData.players || !headerData.finishedAt || !headerData.startedAt || !headerData.roomSettings) {
+            if (
+                !headerData ||
+                !headerData.players ||
+                !headerData.finishedAt ||
+                !headerData.startedAt ||
+                !headerData.roomSettings ||
+                headerData.players.some(p => !p.sidedDeck)
+            ) {
                 throw new Error("couldn't receive enough data to store.");
             }
 
