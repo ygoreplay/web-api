@@ -61,6 +61,7 @@ export default class Round extends BaseEntity {
     //
     // Relation (One-to-Many) - PlayerDeck => Match
     //
+    @Field(() => [PlayerDeck])
     @OneToMany(() => PlayerDeck, playerDeck => playerDeck.match, { cascade: true })
     public playerDecks!: PlayerDeck[];
 
