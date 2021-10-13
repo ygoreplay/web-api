@@ -35,7 +35,7 @@ export class RoundService {
         finishedAt: number,
         playerDecks: [Player, Deck][],
         replayData: Buffer,
-        winnerPlayer: Player,
+        winnerPlayer: Player | null,
     ) {
         let round = this.roundRepository.create();
         round.replayFilePath = "";

@@ -61,12 +61,7 @@ export class ReplayService {
 
             // 실제로 플레이한 라운드 수 보다 데이터가 적다면 부정 데이터이므로 처리하지 않도록 한다.
             const roundCount = replayDataArray.length;
-            if (
-                headerData.startedAt.length !== roundCount ||
-                headerData.finishedAt.length !== roundCount ||
-                !headerData.winnerNames ||
-                headerData.winnerNames.length !== roundCount
-            ) {
+            if (headerData.startedAt.length !== roundCount || headerData.finishedAt.length !== roundCount) {
                 throw new Error("round replay data and timing data count is not matching.");
             }
 
@@ -92,8 +87,7 @@ export class ReplayService {
                     playerDecks.push([posPlayerPair[1], deck]);
                 }
 
-                const winnerName = headerData.winnerNames[i];
-                const winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName);
+                const winnerPlayer = headerData.winnerNames ? posPlayerPairs.map(p => p[1]).find(p => p.name === headerData.winnerNames[i]) : null;
                 const round = await this.roundService.create(
                     i,
                     from,
@@ -107,12 +101,16 @@ export class ReplayService {
                 rounds.push(round);
             }
 
-            const winnerName = _.chain(headerData.scores)
-                .entries()
-                .sortBy(p => p[1])
-                .reverse()
-                .value()[0][0];
-            const winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName);
+            let winnerPlayer: Player | null = null;
+            if (headerData.scores) {
+                const winnerName = _.chain(headerData.scores)
+                    .entries()
+                    .sortBy(p => p[1])
+                    .reverse()
+                    .value()[0][0];
+                winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName) || null;
+            }
+
             return this.matchService.create(
                 headerData.type || MatchType.Normal,
                 headerData.isRandomMatch,

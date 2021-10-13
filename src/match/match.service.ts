@@ -52,7 +52,7 @@ export class MatchService {
         startedAt: number,
         finishedAt: number,
         matchRule: MatchRule,
-        winner: Player,
+        winner: Player | null,
     ) {
         const match = this.matchRepository.create();
         match.rounds = rounds;
