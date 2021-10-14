@@ -65,7 +65,7 @@ export default class Match extends BaseEntity {
     public winner!: Player | null;
 
     @RelationId((entity: Match) => entity.winner)
-    public winnerId!: Player["id"];
+    public winnerId!: Player["id"] | null;
 
     //
     // Relation (One-to-Many) - Round => Match
