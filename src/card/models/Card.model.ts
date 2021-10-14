@@ -7,34 +7,34 @@ import { Text } from "@card/models/Text.model";
 @Entity({ name: "cards" })
 export class Card extends BaseEntity {
     public get isSpell() {
-        return this.type & 0x2;
+        return Boolean(this.type & 0x2);
     }
     public get isTrap() {
-        return this.type & 0x4;
+        return Boolean(this.type & 0x4);
     }
     public get isMonster() {
-        return this.type & 0x1;
+        return Boolean(this.type & 0x1);
     }
     public get isSynchro() {
-        return this.type & 0x2000;
+        return Boolean(this.type & 0x2000);
     }
     public get isXYZ() {
-        return this.type & 0x800000;
+        return Boolean(this.type & 0x800000);
     }
     public get isFusion() {
-        return this.type & 0x40;
+        return Boolean(this.type & 0x40);
     }
     public get isLink() {
-        return this.type & 0x4000000;
+        return Boolean(this.type & 0x4000000);
     }
     public get isPendulum() {
-        return this.type & 0x1000000;
+        return Boolean(this.type & 0x1000000);
     }
     public get isRitual() {
-        return this.type & 0x80;
+        return Boolean(this.type & 0x80);
     }
     public get isExtraCard() {
-        return this.isMonster && this.isFusion && this.isSynchro && this.isXYZ;
+        return this.isMonster && (this.isFusion || this.isSynchro || this.isXYZ || this.isLink);
     }
 
     @Field(() => Int)

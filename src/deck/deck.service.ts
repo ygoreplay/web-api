@@ -26,7 +26,7 @@ export class DeckService {
         try {
             const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
             const formData = new FormData();
-            formData.append("deck", [...deck.main, "!side", ...deck.side].join("\n"));
+            formData.append("deck", [...deck.main, ...deck.extra, "!side", ...deck.side].join("\n"));
 
             const data: { deck: string; tag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
                 method: "POST",
