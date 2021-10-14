@@ -19,14 +19,14 @@ export class DeckService {
     public async create(main: number[], side: number[]) {
         const mainCards = await this.cardService.findByIds(main);
         const deck = this.deckRepository.create();
-        deck.main = mainCards.filter(c => !c.isExtraCard).map(c => c.id);
-        deck.extra = mainCards.filter(c => c.isExtraCard).map(c => c.id);
-        deck.side = side;
+        deck.mainIds = mainCards.filter(c => !c.isExtraCard).map(c => c.id);
+        deck.extraIds = mainCards.filter(c => c.isExtraCard).map(c => c.id);
+        deck.sideIds = side;
 
         try {
             const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
             const formData = new FormData();
-            formData.append("deck", [...deck.main, ...deck.extra, "!side", ...deck.side].join("\n"));
+            formData.append("deck", [...deck.mainIds, ...deck.extraIds, "!side", ...deck.sideIds].join("\n"));
 
             const data: { deck: string; tag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
                 method: "POST",

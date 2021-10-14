@@ -10,7 +10,17 @@ export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService) {}
 
     @ResolveField(() => [Card])
-    public async mainCards(@Root() deck: Deck) {
-        return this.cardService.findByIds(deck.main);
+    public async main(@Root() deck: Deck) {
+        return this.cardService.findByIds(deck.mainIds);
+    }
+
+    @ResolveField(() => [Card])
+    public async extra(@Root() deck: Deck) {
+        return this.cardService.findByIds(deck.extraIds);
+    }
+
+    @ResolveField(() => [Card])
+    public async side(@Root() deck: Deck) {
+        return this.cardService.findByIds(deck.sideIds);
     }
 }

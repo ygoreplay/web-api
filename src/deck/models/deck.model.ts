@@ -13,16 +13,16 @@ export default class Deck extends BaseEntity {
     public id: number;
 
     @Field(() => [Int])
-    @Column({ type: "simple-array" })
-    public main: number[];
+    @Column({ type: "simple-array", name: "main" })
+    public mainIds: number[];
 
     @Field(() => [Int])
-    @Column({ type: "simple-array" })
-    public extra: number[];
+    @Column({ type: "simple-array", name: "extra" })
+    public extraIds: number[];
 
     @Field(() => [Int])
-    @Column({ type: "simple-array" })
-    public side: number[];
+    @Column({ type: "simple-array", name: "side" })
+    public sideIds: number[];
 
     @Field(() => String)
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
