@@ -20,6 +20,11 @@ export class MatchResolver {
         @Inject(PlayerService) private readonly playerService: PlayerService,
     ) {}
 
+    @Query(() => Match, { nullable: true })
+    public async match(@Args("id", { type: () => Int }) id: Match["id"]) {
+        return this.matchService.findById(id);
+    }
+
     @Query(() => [Match])
     public async matches(@Args("count", { type: () => Int }) count: number, @Args("after", { type: () => Int, nullable: true }) after?: Match["id"]) {
         return this.matchService.find(count, after);

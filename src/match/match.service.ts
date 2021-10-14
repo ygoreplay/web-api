@@ -44,6 +44,13 @@ export class MatchService {
             },
         });
     }
+    public findById(id: number) {
+        return this.matchRepository.findOne({
+            where: {
+                id,
+            },
+        });
+    }
     public count() {
         return this.matchRepository.count();
     }
