@@ -49,4 +49,7 @@ export class PlayerService {
             },
         });
     }
+    public findByIds(playerIds: Player["id"][]) {
+        return this.playerRepository.findByIds(playerIds);
+    }
 }

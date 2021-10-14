@@ -8,9 +8,10 @@ import { MatchService } from "@match/match.service";
 import { MatchResolver } from "@match/match.resolver";
 
 import Match from "@match/models/match.model";
+import { MatchRuleModule } from "@match-rule/match-rule.module";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Match]), RoundModule, PlayerModule],
+    imports: [TypeOrmModule.forFeature([Match]), RoundModule, PlayerModule, MatchRuleModule],
     providers: [MatchService, MatchResolver],
     exports: [MatchService],
 })

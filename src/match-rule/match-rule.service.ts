@@ -25,6 +25,14 @@ export interface RawRoomSettings {
 export class MatchRuleService {
     public constructor(@InjectRepository(MatchRule) private readonly matchRuleRepository: Repository<MatchRule>) {}
 
+    public findById(matchRuleId: number) {
+        return this.matchRuleRepository.findOne({
+            where: {
+                id: matchRuleId,
+            },
+        });
+    }
+
     public async ensure(roomSettings: RawRoomSettings) {
         let matchRule = await this.matchRuleRepository.findOne({
             where: {

@@ -10,6 +10,9 @@ import Round from "@round/models/round.model";
 import { PlayerService } from "@player/player.service";
 import Player from "@player/models/player.model";
 
+import { MatchRuleService } from "@match-rule/match-rule.service";
+import MatchRule from "@match-rule/models/match-rule.model";
+
 import { pubSub } from "@root/pubsub";
 
 @Resolver(() => Match)
@@ -18,6 +21,7 @@ export class MatchResolver {
         @Inject(MatchService) private readonly matchService: MatchService,
         @Inject(RoundService) private readonly roundService: RoundService,
         @Inject(PlayerService) private readonly playerService: PlayerService,
+        @Inject(MatchRuleService) private readonly matchRuleService: MatchRuleService,
     ) {}
 
     @Query(() => Match, { nullable: true })
@@ -35,6 +39,11 @@ export class MatchResolver {
         return this.matchService.count();
     }
 
+    @ResolveField(() => [Player])
+    public async players(@Root() match: Match) {
+        return this.playerService.findByIds(match.playerIds);
+    }
+
     @ResolveField(() => Player, { nullable: true })
     public async winner(@Root() match: Match) {
         if (!match.winnerId) {
@@ -47,6 +56,11 @@ export class MatchResolver {
     @ResolveField(() => [Round])
     public async rounds(@Root() match: Match) {
         return this.roundService.findByIds(match.roundIds);
+    }
+
+    @ResolveField(() => MatchRule)
+    public async matchRule(@Root() match: Match) {
+        return this.matchRuleService.findById(match.matchRuleId);
     }
 
     @Subscription(() => Match)
