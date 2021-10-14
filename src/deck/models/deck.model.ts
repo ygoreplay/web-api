@@ -18,6 +18,10 @@ export default class Deck extends BaseEntity {
 
     @Field(() => [Int])
     @Column({ type: "simple-array" })
+    public extra: number[];
+
+    @Field(() => [Int])
+    @Column({ type: "simple-array" })
     public side: number[];
 
     @Field(() => String)

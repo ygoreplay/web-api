@@ -2,18 +2,25 @@ import { Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
 
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+
+import { CardService } from "@card/card.service";
 
 import Deck from "@deck/models/deck.model";
 
 @Injectable()
 export class DeckService {
-    public constructor(@InjectRepository(Deck) private readonly deckRepository: Repository<Deck>) {}
+    public constructor(
+        @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
+        @Inject(CardService) private readonly cardService: CardService,
+    ) {}
 
     public async create(main: number[], side: number[]) {
+        const mainCards = await this.cardService.findByIds(main);
         const deck = this.deckRepository.create();
-        deck.main = main;
+        deck.main = mainCards.filter(c => !c.isExtraCard).map(c => c.id);
+        deck.extra = mainCards.filter(c => c.isExtraCard).map(c => c.id);
         deck.side = side;
 
         try {
