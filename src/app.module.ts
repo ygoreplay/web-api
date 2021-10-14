@@ -11,6 +11,7 @@ import { RoundModule } from "@round/round.module";
 import { DeckModule } from "@deck/deck.module";
 import { PlayerModule } from "@player/player.module";
 import { MatchRuleModule } from "@match-rule/match-rule.module";
+import { CardModule } from "@card/card.module";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
@@ -46,6 +47,7 @@ delete (config as any).entities;
         DeckModule,
         PlayerModule,
         MatchRuleModule,
+        CardModule,
     ],
     controllers: [],
     providers: [],

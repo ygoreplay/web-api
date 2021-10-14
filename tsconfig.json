@@ -19,6 +19,7 @@
         "forceConsistentCasingInFileNames": false,
         "noFallthroughCasesInSwitch": false,
         "paths": {
+            "@card/*": ["./src/card/*"],
             "@match/*": ["./src/match/*"],
             "@replay/*": ["./src/replay/*"],
             "@round/*": ["./src/round/*"],
