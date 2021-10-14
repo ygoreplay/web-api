@@ -53,7 +53,6 @@ export class Card extends BaseEntity {
     @Column({ type: "bigint", name: "setcode" })
     public _setcode!: number;
 
-    @Field(() => Int)
     @Column({ type: "int" })
     public type!: number;
 
