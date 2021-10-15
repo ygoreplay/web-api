@@ -34,8 +34,10 @@ export class DeckService {
             }).then(res => res.json());
 
             deck.recognizedName = data.deck;
+            deck.recognizedTags = data.tag.filter(p => Boolean(p.trim()));
         } catch {
             deck.recognizedName = "unknown deck";
+            deck.recognizedTags = [];
         }
 
         return this.deckRepository.save(deck);
