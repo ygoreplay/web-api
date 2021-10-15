@@ -10,7 +10,19 @@ enum CardType {
     Trap = "Trap",
 }
 
+enum MonsterCardType {
+    Normal = "normal",
+    Effect = "effect",
+    Fusion = "fusion",
+    Ritual = "ritual",
+    Synchro = "synchro",
+    Xyz = "xyz",
+    Pendulum = "pendulum",
+    Link = "link",
+}
+
 registerEnumType(CardType, { name: "CardType" });
+registerEnumType(MonsterCardType, { name: "MonsterCardType" });
 
 @Resolver(() => Card)
 export class CardResolver {
@@ -19,6 +31,32 @@ export class CardResolver {
     @Query(() => Card, { nullable: true })
     public async card(@Args("id", { type: () => Int }) id: number) {
         return this.cardService.findById(id);
+    }
+
+    @ResolveField(() => [MonsterCardType])
+    public async monsterType(@Root() card: Card) {
+        const result: MonsterCardType[] = [];
+        if (card.isFusion) {
+            result.push(MonsterCardType.Fusion);
+        }
+
+        if (card.isSynchro) {
+            result.push(MonsterCardType.Synchro);
+        }
+
+        if (card.isXYZ) {
+            result.push(MonsterCardType.Xyz);
+        }
+
+        if (card.isPendulum) {
+            result.push(MonsterCardType.Pendulum);
+        }
+
+        if (card.isLink) {
+            result.push(MonsterCardType.Link);
+        }
+
+        return result;
     }
 
     @ResolveField(() => CardType)
