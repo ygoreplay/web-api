@@ -32,6 +32,10 @@ export default class Deck extends BaseEntity {
     @Column({ type: "simple-array", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
     public recognizedTags!: string[];
 
+    @Field(() => [String])
+    @Column({ type: "simple-array", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
+    public recognizedDeckTags!: string[];
+
     @Field(() => Date)
     @CreateDateColumn()
     public createdAt: Date;

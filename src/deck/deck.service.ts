@@ -9,6 +9,10 @@ import { CardService } from "@card/card.service";
 
 import Deck from "@deck/models/deck.model";
 
+const PREDEFINED_DECK_TAGS = Object.entries({
+    사이버류: ["사이버드래곤", "사이버다크"],
+});
+
 @Injectable()
 export class DeckService {
     public constructor(
@@ -28,16 +32,43 @@ export class DeckService {
             const formData = new FormData();
             formData.append("deck", [...deck.mainIds, ...deck.extraIds, "!side", ...deck.sideIds].join("\n"));
 
-            const data: { deck: string; tag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
+            const data: { deck: string; tag: string[]; deckTag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
                 method: "POST",
                 body: formData,
             }).then(res => res.json());
 
             deck.recognizedName = data.deck;
             deck.recognizedTags = data.tag.filter(p => Boolean(p.trim()));
+            deck.recognizedDeckTags = data.deckTag.filter(p => Boolean(p.trim()));
+            if (data.deckTag.length > 0) {
+                for (const [deckName, tags] of PREDEFINED_DECK_TAGS) {
+                    const notMatched = tags.some(tag => deck.recognizedDeckTags.indexOf(tag) === -1);
+                    if (notMatched) {
+                        return;
+                    }
+
+                    let foundAt: number | null = null;
+                    data.deckTag = data.deckTag
+                        .map((t, i) => {
+                            const found = tags.indexOf(t) >= 0;
+                            if (!foundAt && found) {
+                                foundAt = i;
+                                return deckName;
+                            } else if (found) {
+                                return "";
+                            }
+
+                            return t;
+                        })
+                        .filter(t => Boolean(t));
+                }
+
+                deck.recognizedName = data.deckTag.reverse().join("");
+            }
         } catch {
             deck.recognizedName = "unknown deck";
             deck.recognizedTags = [];
+            deck.recognizedDeckTags = [];
         }
 
         return this.deckRepository.save(deck);
