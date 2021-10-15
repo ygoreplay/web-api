@@ -24,7 +24,6 @@ delete (config as any).entities;
         GraphQLModule.forRootAsync({
             imports: [],
             useFactory: () => ({
-                path: "/",
                 installSubscriptionHandlers: true,
                 autoSchemaFile:
                     process.env.NODE_ENV !== "production" ? path.join(process.cwd(), "../web-app", "./schema.gql") : path.join(process.cwd(), "./schema.gql"),
