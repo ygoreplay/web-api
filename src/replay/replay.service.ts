@@ -77,6 +77,11 @@ export class ReplayService {
                 throw new Error("player count is not matching with minimum required value.");
             }
 
+            // 덱 데이터가 누락된 경우에는 저장을 피해야 한다.
+            if (headerData.players[0].sidedDeck.length !== headerData.players[1].sidedDeck.length) {
+                throw new Error("deck count of both of player doesn't match.");
+            }
+
             const posPlayerPairs: [pos: number, player: Player][] = [];
             const rounds: Round[] = [];
             for (let i = 0; i < replayDataArray.length; i++) {
