@@ -89,7 +89,6 @@ export class ReplayService {
                 for (const playerData of headerData.players) {
                     const { main, side } = playerData.sidedDeck[i];
                     const deck = await this.deckService.create(main, side);
-
                     let posPlayerPair = posPlayerPairs.find(ppp => ppp[0] === playerData.pos);
                     if (!posPlayerPair) {
                         posPlayerPair = [playerData.pos, await this.playerService.ensure(playerData)];

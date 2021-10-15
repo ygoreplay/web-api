@@ -32,19 +32,19 @@ export class DeckService {
             const formData = new FormData();
             formData.append("deck", [...deck.mainIds, ...deck.extraIds, "!side", ...deck.sideIds].join("\n"));
 
-            const data: { deck: string; tag: string[]; deckTag: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
+            const data: { deck: string; tag?: string[]; deckTag?: string[] } = await fetch(`${identifierBaseUrl}/production/recognize`, {
                 method: "POST",
                 body: formData,
             }).then(res => res.json());
 
             deck.recognizedName = data.deck;
-            deck.recognizedTags = data.tag.filter(p => Boolean(p.trim()));
-            deck.recognizedDeckTags = data.deckTag.filter(p => Boolean(p.trim()));
-            if (data.deckTag.length > 0) {
+            deck.recognizedTags = data.tag ? data.tag.filter(p => Boolean(p.trim())) : [];
+            deck.recognizedDeckTags = data.deckTag ? data.deckTag.filter(p => Boolean(p.trim())) : [];
+            if (data.deckTag && data.deckTag.length > 0) {
                 for (const [deckName, tags] of PREDEFINED_DECK_TAGS) {
                     const notMatched = tags.some(tag => deck.recognizedDeckTags.indexOf(tag) === -1);
                     if (notMatched) {
-                        return;
+                        break;
                     }
 
                     let foundAt: number | null = null;
@@ -65,7 +65,9 @@ export class DeckService {
 
                 deck.recognizedName = data.deckTag.reverse().join("");
             }
-        } catch {
+        } catch (e) {
+            console.log((e as Error).message);
+
             deck.recognizedName = "unknown deck";
             deck.recognizedTags = [];
             deck.recognizedDeckTags = [];
