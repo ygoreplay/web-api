@@ -6,6 +6,7 @@ import Match from "@match/models/match.model";
 
 import { RoundService } from "@round/round.service";
 import Round from "@round/models/round.model";
+import PlayerDeck from "@round/models/player-deck.model";
 
 import { PlayerService } from "@player/player.service";
 import Player from "@player/models/player.model";
@@ -39,6 +40,24 @@ export class MatchResolver {
         return this.matchService.count();
     }
 
+    @ResolveField(() => PlayerDeck)
+    public async home(@Root() match: Match) {
+        const rounds = await this.rounds(match);
+        const players = await this.players(match);
+        const playerDecks = await this.roundService.getPlayerDecks(rounds[0]);
+
+        return playerDecks.find(pd => pd.playerId === players[0].id);
+    }
+
+    @ResolveField(() => PlayerDeck)
+    public async away(@Root() match: Match) {
+        const rounds = await this.rounds(match);
+        const players = await this.players(match);
+        const playerDecks = await this.roundService.getPlayerDecks(rounds[0]);
+
+        return playerDecks.find(pd => pd.playerId === players[1].id);
+    }
+
     @ResolveField(() => [Player])
     public async players(@Root() match: Match) {
         return this.playerService.findByIds(match.playerIds);
@@ -56,6 +75,11 @@ export class MatchResolver {
     @ResolveField(() => [Round])
     public async rounds(@Root() match: Match) {
         return this.roundService.findByIds(match.roundIds);
+    }
+
+    @ResolveField(() => Int)
+    public async roundCount(@Root() match: Match) {
+        return match.roundIds.length;
     }
 
     @ResolveField(() => MatchRule)
