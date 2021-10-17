@@ -1,8 +1,9 @@
+import * as _ from "lodash";
 import { Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
 
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { CardService } from "@card/card.service";
@@ -11,14 +12,41 @@ import Deck from "@deck/models/deck.model";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
+    괴수카구야: ["미계역", "카구야", "설화"],
 });
 
 @Injectable()
-export class DeckService {
+export class DeckService implements OnModuleInit {
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @Inject(CardService) private readonly cardService: CardService,
     ) {}
+
+    public async onModuleInit() {
+        const decks = await this.deckRepository.createQueryBuilder("d").where("CHAR_LENGTH(`recognizedDeckTags`) > 0").getMany();
+        const multiTagDecks = decks.filter(d => d.recognizedDeckTags.length > 1);
+
+        const changedDeck: Deck[] = [];
+        for (const deck of multiTagDecks) {
+            let tags = [...deck.recognizedDeckTags];
+            const mostMatchedDeckTag = _.chain(PREDEFINED_DECK_TAGS)
+                .filter(t => _.intersection(tags, t[1]).length === t[1].length)
+                .sortBy(t => t[1].length)
+                .first()
+                .value() as [string, string[]];
+
+            if (!mostMatchedDeckTag) {
+                continue;
+            }
+
+            tags = [mostMatchedDeckTag[0], ..._.difference(tags, mostMatchedDeckTag[1])];
+            deck.recognizedName = tags.reverse().join("");
+
+            changedDeck.push(deck);
+        }
+
+        await this.deckRepository.save(changedDeck);
+    }
 
     public async create(main: number[], side: number[]) {
         const mainCards = await this.cardService.findByIds(main);
