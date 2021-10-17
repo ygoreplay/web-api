@@ -3,12 +3,13 @@ import { Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
 
-import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { CardService } from "@card/card.service";
 
 import Deck from "@deck/models/deck.model";
+import { MatchService } from "@match/match.service";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -23,9 +24,12 @@ const DECK_TAG_WEIGHTS = {
 
 @Injectable()
 export class DeckService implements OnModuleInit {
+    private readonly logger = new Logger(DeckService.name);
+
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @Inject(CardService) private readonly cardService: CardService,
+        @Inject(MatchService) private readonly matchService: MatchService,
     ) {}
 
     public async onModuleInit() {
