@@ -47,7 +47,7 @@ export class CardService implements OnModuleInit {
 
     private async checkIfUpdateNeeded() {
         if (!fs.existsSync(".db-last-commit")) {
-            return true;
+            return [true, false];
         }
 
         const savedCommitId = await fs.readFile(".db-last-commit").then(b => b.toString());
@@ -56,28 +56,33 @@ export class CardService implements OnModuleInit {
             repo: "ygopro-database",
         });
 
-        return savedCommitId !== commits.data[0].sha;
+        return [savedCommitId !== commits.data[0].sha, fs.existsSync("./cards.cdb")];
     }
 
     private async doUpdate() {
         this.logger.log("Check if there's new card database...");
 
-        const updateNeeded = await this.checkIfUpdateNeeded();
-        if (!updateNeeded) {
+        const [updateNeeded, databaseExists] = await this.checkIfUpdateNeeded();
+        if (!updateNeeded && !databaseExists) {
             this.logger.log("Card database currently installed seems up to date.");
             return;
         }
-
-        this.logger.log("Card database currently installed seems outdated.");
-        this.logger.log("try to download and apply new one...");
 
         const commits = await this.octokit.repos.listCommits({
             owner: "mycard",
             repo: "ygopro-database",
         });
 
-        const buffer = await fetch("https://github.com/mycard/ygopro-database/raw/master/locales/ko-KR/cards.cdb").then(res => res.buffer());
-        await fs.writeFile("cards.cdb", buffer);
+        if (!databaseExists) {
+            this.logger.log("Card database currently installed seems outdated.");
+            this.logger.log("try to download and apply new one...");
+
+            const buffer = await fetch("https://github.com/mycard/ygopro-database/raw/master/locales/ko-KR/cards.cdb").then(res => res.buffer());
+            await fs.writeFile("cards.cdb", buffer);
+        } else if (databaseExists) {
+            this.logger.log("Card database currently downloaded but not inserted.");
+            this.logger.log("try to insert all into database ...");
+        }
 
         const connection = await createConnection({
             type: "sqlite",
