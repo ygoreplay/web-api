@@ -15,6 +15,12 @@ const PREDEFINED_DECK_TAGS = Object.entries({
     괴수카구야: ["미계역", "카구야", "설화"],
 });
 
+const DECK_TAG_WEIGHTS = {
+    제외계: -10,
+    드라그마: -9,
+    용사: -8,
+};
+
 @Injectable()
 export class DeckService implements OnModuleInit {
     public constructor(
@@ -28,19 +34,10 @@ export class DeckService implements OnModuleInit {
 
         const changedDeck: Deck[] = [];
         for (const deck of multiTagDecks) {
-            let tags = [...deck.recognizedDeckTags];
-            const mostMatchedDeckTag = _.chain(PREDEFINED_DECK_TAGS)
-                .filter(t => _.intersection(tags, t[1]).length === t[1].length)
-                .sortBy(t => t[1].length)
-                .first()
-                .value() as [string, string[]];
-
-            if (!mostMatchedDeckTag) {
+            const needToSave = this.reorderDeckTag(deck) || this.renameDeck(deck);
+            if (!needToSave) {
                 continue;
             }
-
-            tags = [mostMatchedDeckTag[0], ..._.difference(tags, mostMatchedDeckTag[1])];
-            deck.recognizedName = tags.reverse().join("");
 
             changedDeck.push(deck);
         }
@@ -69,29 +66,10 @@ export class DeckService implements OnModuleInit {
             deck.recognizedTags = data.tag ? data.tag.filter(p => Boolean(p.trim())) : [];
             deck.recognizedDeckTags = data.deckTag ? data.deckTag.filter(p => Boolean(p.trim())) : [];
             if (data.deckTag && data.deckTag.length > 0) {
-                for (const [deckName, tags] of PREDEFINED_DECK_TAGS) {
-                    const notMatched = tags.some(tag => deck.recognizedDeckTags.indexOf(tag) === -1);
-                    if (notMatched) {
-                        break;
-                    }
-
-                    let foundAt: number | null = null;
-                    data.deckTag = data.deckTag
-                        .map((t, i) => {
-                            const found = tags.indexOf(t) >= 0;
-                            if (!foundAt && found) {
-                                foundAt = i;
-                                return deckName;
-                            } else if (found) {
-                                return "";
-                            }
-
-                            return t;
-                        })
-                        .filter(t => Boolean(t));
-                }
-
                 deck.recognizedName = data.deckTag.reverse().join("");
+
+                this.reorderDeckTag(deck);
+                this.renameDeck(deck);
             }
         } catch (e) {
             console.log((e as Error).message);
@@ -110,5 +88,32 @@ export class DeckService implements OnModuleInit {
                 id: deckId,
             },
         });
+    }
+
+    private renameDeck(deck: Deck) {
+        let tags = [...deck.recognizedDeckTags];
+        const mostMatchedDeckTag = _.chain(PREDEFINED_DECK_TAGS)
+            .filter(t => _.intersection(tags, t[1]).length === t[1].length)
+            .sortBy(t => t[1].length)
+            .first()
+            .value() as [string, string[]];
+
+        if (!mostMatchedDeckTag) {
+            return false;
+        }
+
+        tags = [mostMatchedDeckTag[0], ..._.difference(tags, mostMatchedDeckTag[1])];
+        deck.recognizedName = tags.reverse().join("");
+
+        return true;
+    }
+    private reorderDeckTag(deck: Deck) {
+        const ordered = _.sortBy(deck.recognizedDeckTags, t => (t in DECK_TAG_WEIGHTS ? DECK_TAG_WEIGHTS[t] : 0));
+        const result = !_.isEqual(deck.recognizedDeckTags, ordered);
+        if (result) {
+            deck.recognizedName = ordered.join("");
+        }
+
+        return result;
     }
 }
