@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
 
@@ -33,20 +33,37 @@ export class DeckService implements OnModuleInit {
     ) {}
 
     public async onModuleInit() {
-        const decks = await this.deckRepository.createQueryBuilder("d").where("CHAR_LENGTH(`recognizedDeckTags`) > 0").getMany();
-        const multiTagDecks = decks.filter(d => d.recognizedDeckTags.length > 1);
+        const decks = await this.deckRepository
+            .createQueryBuilder()
+            .select("id")
+            .addSelect("recognizedDeckTags")
+            .where("CHAR_LENGTH(recognizedDeckTags) > 0")
+            .andWhere("recognizedDeckTags LIKE '%,%'")
+            .getRawMany<{ id: number; recognizedDeckTags: string }>();
 
-        const changedDeck: Deck[] = [];
-        for (const deck of multiTagDecks) {
-            const needToSave = this.reorderDeckTag(deck) || this.renameDeck(deck);
-            if (!needToSave) {
+        const grouped = _.groupBy(decks, p => p.recognizedDeckTags) as { [key: string]: typeof decks };
+        for (const [tags, decks] of Object.entries(grouped)) {
+            const targetIds = decks.map(d => d.id);
+
+            const deck = this.deckRepository.create();
+            deck.recognizedDeckTags = tags.split(",");
+
+            this.reorderDeckTag(deck);
+            this.renameDeck(deck);
+
+            if (!deck.recognizedName) {
                 continue;
             }
 
-            changedDeck.push(deck);
+            await this.deckRepository.update(
+                {
+                    id: In(targetIds),
+                },
+                {
+                    recognizedName: deck.recognizedName,
+                },
+            );
         }
-
-        await this.deckRepository.save(changedDeck);
     }
 
     public async create(main: number[], side: number[]) {
