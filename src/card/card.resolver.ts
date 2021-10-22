@@ -33,6 +33,16 @@ export class CardResolver {
         return this.cardService.findById(id);
     }
 
+    @Query(() => Card, { nullable: true })
+    public async indexedCard(@Args("index", { type: () => Int }) index: number) {
+        return this.cardService.findByIndex(index);
+    }
+
+    @Query(() => Int)
+    public async cardCount() {
+        return this.cardService.count();
+    }
+
     @ResolveField(() => [MonsterCardType])
     public async monsterType(@Root() card: Card) {
         const result: MonsterCardType[] = [];

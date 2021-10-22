@@ -26,6 +26,10 @@ export class CardService implements OnModuleInit {
         await this.doUpdate();
     }
 
+    public async count() {
+        return this.cardRepository.count();
+    }
+
     public async findByIds(ids: (string | number)[]) {
         const cards = await this.cardRepository.findByIds(ids);
         return ids.map(id => {
@@ -43,6 +47,17 @@ export class CardService implements OnModuleInit {
                 id,
             },
         });
+    }
+    public async findByIndex(index: number): Promise<Card | undefined> {
+        const data = await this.cardRepository.find({
+            order: {
+                id: "ASC",
+            },
+            skip: index,
+            take: 1,
+        });
+
+        return data[0];
     }
 
     private async checkIfUpdateNeeded() {
