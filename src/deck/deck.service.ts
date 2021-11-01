@@ -108,6 +108,7 @@ export class DeckService implements OnModuleInit {
 
         return this.deckRepository.save(deck);
     }
+
     public findById(deckId: Deck["id"]) {
         return this.deckRepository.findOne({
             where: {
@@ -116,12 +117,75 @@ export class DeckService implements OnModuleInit {
         });
     }
 
+    private generateDeckUsageObject(res: { name: string; count: string; tags: string }[]) {
+        return res.map(item => ({
+            name: item.name,
+            tags: !item.tags ? [] : item.tags.split(","),
+            count: parseInt(item.count, 10),
+            key: `${item.name}|${item.tags}`,
+        }));
+    }
+
+    private async getDeckUsages(won?: boolean) {
+        // SELECT
+        //     `deckName`,
+        //     `deckTags`,
+        //     COUNT(`deckName`) AS `count`
+        // FROM
+        //     `win-rate-data` `w-r-d`
+        // GROUP BY
+        //     `deckName`,
+        //     `deckTags`
+        // ORDER BY
+        //     `count` DESC
+        let queryBuilder = await this.winRateDataRepository
+            .createQueryBuilder("wrd")
+            .select("`wrd`.`deckName`", "name")
+            .addSelect("`wrd`.`deckTags`", "tags")
+            .addSelect("COUNT(`wrd`.`deckName`)", "count")
+            .groupBy("`wrd`.`deckName`")
+            .addGroupBy("`wrd`.`deckTags`")
+            .orderBy("`count`", "DESC");
+
+        if (won) {
+            queryBuilder = queryBuilder.where("`wrd`.`won` = 1");
+        }
+
+        return queryBuilder.getRawMany<{ name: string; count: string; tags: string }>().then(this.generateDeckUsageObject);
+    }
+    public async getWinRates(count: number): Promise<[string, number][]> {
+        const usageData = await this.getDeckUsages();
+        const winningData = await this.getDeckUsages(true);
+        const winningMap = _.chain(winningData).keyBy("key").mapValues("count").value();
+
+        const topUsages = usageData.slice(0, count);
+        const restUsages = usageData.slice(count);
+        const results: [string, number, number][] = [];
+        for (const item of topUsages) {
+            const result: [string, number, number] = [item.name, item.count, winningMap[item.key]];
+            const otherUsages = restUsages.filter(data => data.tags.indexOf(item.name) >= 0);
+            for (const usingDeck of otherUsages) {
+                result[1] += usingDeck.count;
+                result[2] += winningMap[usingDeck.key] || 0;
+            }
+
+            results.push(result);
+        }
+
+        return _.chain(results)
+            .map<[string, number]>(item => [item[0], item[2] / item[1]])
+            .sortBy(p => p[1])
+            .reverse()
+            .value();
+    }
+
     public async registerWinRateData(match: Match) {
         const matchResult = await this.matchService.getMatchResultData(match);
         const winRateData = this.composeMatchResultToWinRate(matchResult);
 
         await this.winRateDataRepository.insert(winRateData);
     }
+
     public composeMatchResultToWinRate(matchResult: MatchResultData[]): WinRateData[] {
         return matchResult.map<WinRateData>(data => {
             const winRateData = this.winRateDataRepository.create();
@@ -134,6 +198,7 @@ export class DeckService implements OnModuleInit {
             winRateData.match = {
                 id: data.matchId,
             } as Match;
+            winRateData.deckTags = data.deckTags;
 
             return winRateData;
         });
@@ -156,6 +221,7 @@ export class DeckService implements OnModuleInit {
 
         return true;
     }
+
     private reorderDeckTag(deck: Deck) {
         const ordered = _.sortBy(deck.recognizedDeckTags, t => (t in DECK_TAG_WEIGHTS ? DECK_TAG_WEIGHTS[t] : 0));
         const result = !_.isEqual(deck.recognizedDeckTags, ordered);

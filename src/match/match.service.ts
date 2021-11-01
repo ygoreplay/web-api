@@ -17,6 +17,7 @@ export interface MatchResultData {
     matchStartedAt: Date;
     playerId: number;
     deckName: string;
+    deckTags: string[];
     won: boolean;
 }
 
@@ -74,6 +75,7 @@ export class MatchService {
             .addSelect("`m`.`startedAt`", "matchStartedAt")
             .addSelect("`p`.`id`", "playerId")
             .addSelect("`d`.`recognizedName`", "deckName")
+            .addSelect("`d`.`recognizedDeckTags`", "deckTags")
             .addSelect("(`m`.`winnerId` = `p-d`.`playerId`)", "won")
             .innerJoin("rounds", "r", "`r`.`matchId` = `m`.`id` AND `r`.`no` = 0")
             .innerJoin("player-decks", "p-d", "`r`.`id` = `p-d`.`matchId`")
@@ -85,74 +87,23 @@ export class MatchService {
             matchResultQuery = matchResultQuery.andWhere("`m`.`id` = :matchId", { matchId: match.id });
         }
 
-        const matchResult = await matchResultQuery.getRawMany<{ matchId: string; deckName: string; won: string; playerId: string; matchStartedAt: Date }>();
+        const matchResult = await matchResultQuery.getRawMany<{
+            matchId: string;
+            deckName: string;
+            won: string;
+            playerId: string;
+            matchStartedAt: Date;
+            deckTags: string;
+        }>();
 
         return matchResult.map<MatchResultData>(r => ({
             matchId: parseInt(r.matchId, 10),
             matchStartedAt: r.matchStartedAt,
             playerId: parseInt(r.playerId, 10),
             won: Boolean(parseInt(r.won, 10)),
+            deckTags: r.deckTags.split(","),
             deckName: r.deckName,
         }));
-    }
-    public async getWinRate(count: number): Promise<[string, number][]> {
-        const allDecksObject = await this.matchRepository
-            .createQueryBuilder("m")
-            .select("`m`.`id`", "matchId")
-            .addSelect("`r`.`id`", "roundId")
-            .addSelect("`p-d`.`deckId`", "deckId")
-            .addSelect("`d`.`recognizedName`", "name")
-            .addSelect("`d`.`recognizedDeckTags`", "tags")
-            .leftJoin("rounds", "r", "`m`.`id` = `r`.`matchId` AND `r`.`no` = 0")
-            .leftJoin("player-decks", "p-d", "`p-d`.`matchId` = `r`.`id`")
-            .leftJoin("decks", "d", "`d`.`id` = `p-d`.`deckId`")
-            .getRawMany<{ name: string; tags: string }>();
-
-        const allWinningDecksObject = await this.matchRepository
-            .createQueryBuilder("m")
-            .select("`m`.`id`", "matchId")
-            .addSelect("`r`.`id`", "roundId")
-            .addSelect("`p-d`.`deckId`", "deckId")
-            .addSelect("`d`.`recognizedName`", "name")
-            .addSelect("`d`.`recognizedDeckTags`", "tags")
-            .leftJoin("rounds", "r", "`m`.`id` = `r`.`matchId` AND `r`.`no` = 0")
-            .leftJoin("player-decks", "p-d", "`p-d`.playerId = `m`.`winnerId` AND `p-d`.`matchId` = `r`.`id`")
-            .leftJoin("decks", "d", "`d`.`id` = `p-d`.`deckId`")
-            .getRawMany<{ name: string; tags: string }>();
-
-        const allDecks = _.countBy(allDecksObject, d => d.name);
-        const allWinningDecks = _.countBy(allWinningDecksObject, d => d.name);
-
-        const topAppearingDecks = _.chain(allDecks)
-            .entries()
-            .sortBy(p => p[1])
-            .reverse()
-            .value()
-            .slice(0, count);
-
-        for (const [deckName] of topAppearingDecks) {
-            topAppearingDecks[deckName] = _.sum(
-                Object.entries(allDecks)
-                    .filter(([d]) => d.endsWith(deckName))
-                    .map(p => p[1]),
-            );
-
-            allWinningDecks[deckName] = _.sum(
-                Object.entries(allWinningDecks)
-                    .filter(([d]) => d.endsWith(deckName))
-                    .map(p => p[1]),
-            );
-        }
-
-        for (const [deckName, appearCount] of Object.entries(allDecks)) {
-            allDecks[deckName] = deckName in allWinningDecks ? allWinningDecks[deckName] / appearCount : 0;
-        }
-
-        return _.chain(topAppearingDecks)
-            .map(p => [p[0], allDecks[p[0]]])
-            .sortBy(p => p[1])
-            .reverse()
-            .value() as [string, number][];
     }
 
     public async create(

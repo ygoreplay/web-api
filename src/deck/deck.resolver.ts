@@ -4,18 +4,17 @@ import { Args, Int, Query, ResolveField, Resolver, Root } from "@nestjs/graphql"
 import { CardService } from "@card/card.service";
 import { Card } from "@card/models/Card.model";
 
-import { MatchService } from "@match/match.service";
-
+import { DeckService } from "@deck/deck.service";
 import Deck from "@deck/models/deck.model";
 import { WinRate } from "@deck/models/win-rate.object";
 
 @Resolver(() => Deck)
 export class DeckResolver {
-    public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(MatchService) private readonly matchService: MatchService) {}
+    public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
 
     @Query(() => [WinRate])
     public async winRate(@Args("count", { type: () => Int, defaultValue: 10 }) count: number) {
-        const winRate = await this.matchService.getWinRate(count);
+        const winRate = await this.deckService.getWinRates(count);
         return winRate.map<WinRate>(p => ({ rate: p[1], deckName: p[0] }));
     }
 

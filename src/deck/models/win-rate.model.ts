@@ -17,6 +17,9 @@ export class WinRateData extends BaseEntity {
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
     public deckName!: string;
 
+    @Column({ type: "simple-array", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
+    public deckTags: string[];
+
     @Field(() => Boolean)
     @Column({ type: "boolean" })
     public won!: boolean;
