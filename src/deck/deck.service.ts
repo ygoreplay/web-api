@@ -16,6 +16,7 @@ import Deck from "@deck/models/deck.model";
 import { WinRateData } from "@deck/models/win-rate.model";
 import Match from "@match/models/match.model";
 import Player from "@player/models/player.model";
+import { Cron } from "@nestjs/schedule";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -126,33 +127,6 @@ export class DeckService implements OnModuleInit {
         }));
     }
 
-    private async getDeckUsages(won?: boolean) {
-        // SELECT
-        //     `deckName`,
-        //     `deckTags`,
-        //     COUNT(`deckName`) AS `count`
-        // FROM
-        //     `win-rate-data` `w-r-d`
-        // GROUP BY
-        //     `deckName`,
-        //     `deckTags`
-        // ORDER BY
-        //     `count` DESC
-        let queryBuilder = await this.winRateDataRepository
-            .createQueryBuilder("wrd")
-            .select("`wrd`.`deckName`", "name")
-            .addSelect("`wrd`.`deckTags`", "tags")
-            .addSelect("COUNT(`wrd`.`deckName`)", "count")
-            .groupBy("`wrd`.`deckName`")
-            .addGroupBy("`wrd`.`deckTags`")
-            .orderBy("`count`", "DESC");
-
-        if (won) {
-            queryBuilder = queryBuilder.where("`wrd`.`won` = 1");
-        }
-
-        return queryBuilder.getRawMany<{ name: string; count: string; tags: string }>().then(this.generateDeckUsageObject);
-    }
     public async getWinRates(count: number): Promise<[string, number][]> {
         const usageData = await this.getDeckUsages();
         const winningData = await this.getDeckUsages(true);
@@ -181,14 +155,12 @@ export class DeckService implements OnModuleInit {
             .reverse()
             .value();
     }
-
     public async registerWinRateData(match: Match) {
         const matchResult = await this.matchService.getMatchResultData(match);
         const winRateData = this.composeMatchResultToWinRate(matchResult);
 
         await this.winRateDataRepository.insert(winRateData);
     }
-
     public composeMatchResultToWinRate(matchResult: MatchResultData[]): WinRateData[] {
         return matchResult.map<WinRateData>(data => {
             const winRateData = this.winRateDataRepository.create();
@@ -205,6 +177,33 @@ export class DeckService implements OnModuleInit {
 
             return winRateData;
         });
+    }
+    private async getDeckUsages(won?: boolean) {
+        // SELECT
+        //     `deckName`,
+        //     `deckTags`,
+        //     COUNT(`deckName`) AS `count`
+        // FROM
+        //     `win-rate-data` `w-r-d`
+        // GROUP BY
+        //     `deckName`,
+        //     `deckTags`
+        // ORDER BY
+        //     `count` DESC
+        let queryBuilder = await this.winRateDataRepository
+            .createQueryBuilder("wrd")
+            .select("`wrd`.`deckName`", "name")
+            .addSelect("`wrd`.`deckTags`", "tags")
+            .addSelect("COUNT(`wrd`.`deckName`)", "count")
+            .groupBy("`wrd`.`deckName`")
+            .addGroupBy("`wrd`.`deckTags`")
+            .orderBy("`count`", "DESC");
+
+        if (won) {
+            queryBuilder = queryBuilder.where("`wrd`.`won` = 1");
+        }
+
+        return queryBuilder.getRawMany<{ name: string; count: string; tags: string }>().then(this.generateDeckUsageObject);
     }
 
     private renameDeck(deck: Deck) {
@@ -224,7 +223,6 @@ export class DeckService implements OnModuleInit {
 
         return true;
     }
-
     private reorderDeckTag(deck: Deck) {
         const ordered = _.sortBy(deck.recognizedDeckTags, t => (t in DECK_TAG_WEIGHTS ? DECK_TAG_WEIGHTS[t] : 0));
         const result = !_.isEqual(deck.recognizedDeckTags, ordered);
@@ -233,5 +231,16 @@ export class DeckService implements OnModuleInit {
         }
 
         return result;
+    }
+
+    @Cron("0 */5 * * * *")
+    private async pollIdentifierUpdate() {
+        const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
+
+        await fetch(`${identifierBaseUrl}/update`, {
+            method: "POST",
+        }).then(res => res.text());
+
+        this.logger.debug("Successfully sent identifier update checking message.");
     }
 }

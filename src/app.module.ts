@@ -4,6 +4,8 @@ import { Request } from "express";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { GraphQLModule } from "@nestjs/graphql";
+import { BullModule } from "@nestjs/bull";
+import { ScheduleModule } from "@nestjs/schedule";
 
 import { ReplayModule } from "@replay/replay.module";
 import { MatchModule } from "@match/match.module";
@@ -15,12 +17,11 @@ import { CardModule } from "@card/card.module";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
-import { BullModule } from "@nestjs/bull";
-
 delete (config as any).entities;
 
 @Module({
     imports: [
+        ScheduleModule.forRoot(),
         BullModule.forRoot({
             redis: {
                 host: process.env.REDIS_HOST || "localhost",
