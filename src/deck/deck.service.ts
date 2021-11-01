@@ -173,7 +173,10 @@ export class DeckService implements OnModuleInit {
         }
 
         return _.chain(results)
-            .map<[string, number]>(item => [item[0], item[2] / item[1]])
+            .map<[string, number]>(item => {
+                const winRate = item[2] / item[1];
+                return [item[0], Number.isNaN(winRate) ? 0 : winRate];
+            })
             .sortBy(p => p[1])
             .reverse()
             .value();
