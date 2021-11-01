@@ -3,19 +3,20 @@ import {
     Column,
     CreateDateColumn,
     Entity,
+    JoinTable,
     ManyToMany,
     ManyToOne,
     OneToMany,
     PrimaryGeneratedColumn,
     RelationId,
     UpdateDateColumn,
-    JoinTable,
 } from "typeorm";
 import { Field, Int, ObjectType, registerEnumType } from "@nestjs/graphql";
 
 import Round from "@round/models/round.model";
 import Player from "@player/models/player.model";
 import MatchRule from "@match-rule/models/match-rule.model";
+import { WinRateData } from "@deck/models/win-rate.model";
 
 export enum MatchType {
     Normal = "normal",
@@ -97,4 +98,13 @@ export default class Match extends BaseEntity {
 
     @RelationId((entity: Match) => entity.matchRule)
     public matchRuleId!: MatchRule["id"];
+
+    //
+    // Relation (One-to-Many) - WinRateData => Match
+    //
+    @OneToMany(() => WinRateData, winRateData => winRateData.match)
+    public winRateData!: WinRateData[];
+
+    @RelationId((entity: Match) => entity.winRateData)
+    public winRateDataIds!: WinRateData["id"][];
 }

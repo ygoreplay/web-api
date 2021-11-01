@@ -12,6 +12,14 @@ import MatchRule from "@match-rule/models/match-rule.model";
 
 import { pubSub } from "@root/pubsub";
 
+export interface MatchResultData {
+    matchId: number;
+    matchStartedAt: Date;
+    playerId: number;
+    deckName: string;
+    won: boolean;
+}
+
 @Injectable()
 export class MatchService {
     private static convertStringToMatchType(type: string) {
@@ -59,6 +67,34 @@ export class MatchService {
         return this.matchRepository.count();
     }
 
+    public async getMatchResultData(match?: Match): Promise<MatchResultData[]> {
+        let matchResultQuery = await this.matchRepository
+            .createQueryBuilder("m")
+            .select("`m`.`id`", "matchId")
+            .addSelect("`m`.`startedAt`", "matchStartedAt")
+            .addSelect("`p`.`id`", "playerId")
+            .addSelect("`d`.`recognizedName`", "deckName")
+            .addSelect("(`m`.`winnerId` = `p-d`.`playerId`)", "won")
+            .innerJoin("rounds", "r", "`r`.`matchId` = `m`.`id` AND `r`.`no` = 0")
+            .innerJoin("player-decks", "p-d", "`r`.`id` = `p-d`.`matchId`")
+            .innerJoin("decks", "d", "`p-d`.`deckId` = `d`.`id`")
+            .innerJoin("players", "p", "`p-d`.`playerId` = `p`.`id`")
+            .where("`m`.`winnerId` IS NOT NULL");
+
+        if (match) {
+            matchResultQuery = matchResultQuery.andWhere("`m`.`id` = :matchId", { matchId: match.id });
+        }
+
+        const matchResult = await matchResultQuery.getRawMany<{ matchId: string; deckName: string; won: string; playerId: string; matchStartedAt: Date }>();
+
+        return matchResult.map<MatchResultData>(r => ({
+            matchId: parseInt(r.matchId, 10),
+            matchStartedAt: r.matchStartedAt,
+            playerId: parseInt(r.playerId, 10),
+            won: Boolean(parseInt(r.won, 10)),
+            deckName: r.deckName,
+        }));
+    }
     public async getWinRate(count: number): Promise<[string, number][]> {
         const allDecksObject = await this.matchRepository
             .createQueryBuilder("m")

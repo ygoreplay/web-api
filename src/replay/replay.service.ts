@@ -122,7 +122,7 @@ export class ReplayService {
                 winnerPlayer = posPlayerPairs.map(p => p[1]).find(p => p.name === winnerName) || null;
             }
 
-            return this.matchService.create(
+            const match = await this.matchService.create(
                 headerData.type || MatchType.Normal,
                 headerData.isRandomMatch,
                 rounds,
@@ -132,8 +132,12 @@ export class ReplayService {
                 await this.matchRuleService.ensure(headerData.roomSettings),
                 winnerPlayer,
             );
+
+            await this.deckService.registerWinRateData(match);
+
+            ReplayService.logger.log(`Successfully registered match #${match.id} data.`);
         } catch (e) {
-            ReplayService.logger.error("Catched an exception during process match data:");
+            ReplayService.logger.error("Caught an exception during process match data:");
             console.error(e);
         }
     }

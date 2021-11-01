@@ -4,6 +4,7 @@ import { Field, Int, ObjectType } from "@nestjs/graphql";
 import PlayerDeck from "@round/models/player-deck.model";
 import Match from "@match/models/match.model";
 import Round from "@round/models/round.model";
+import { WinRateData } from "@deck/models/win-rate.model";
 
 @ObjectType()
 @Entity({
@@ -73,4 +74,13 @@ export default class Player extends BaseEntity {
 
     @RelationId((entity: Player) => entity.match)
     public matchId!: Match["id"];
+
+    //
+    // Relation (One-to-Many) - WinRateData => Player
+    //
+    @OneToMany(() => WinRateData, winRateData => winRateData.player)
+    public winRateData!: WinRateData[];
+
+    @RelationId((entity: Player) => entity.winRateData)
+    public winRateDataIds!: WinRateData["id"][];
 }

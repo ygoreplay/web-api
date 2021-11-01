@@ -2,14 +2,20 @@ import * as _ from "lodash";
 import { In, Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
+import { Queue } from "bull";
 
 import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { InjectQueue } from "@nestjs/bull";
 
 import { CardService } from "@card/card.service";
 
+import { MatchResultData, MatchService } from "@match/match.service";
+
 import Deck from "@deck/models/deck.model";
-import { MatchService } from "@match/match.service";
+import { WinRateData } from "@deck/models/win-rate.model";
+import Match from "@match/models/match.model";
+import Player from "@player/models/player.model";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -28,6 +34,8 @@ export class DeckService implements OnModuleInit {
 
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
+        @InjectRepository(WinRateData) private readonly winRateDataRepository: Repository<WinRateData>,
+        @InjectQueue("win-rate") private readonly winRateQueue: Queue,
         @Inject(CardService) private readonly cardService: CardService,
         @Inject(MatchService) private readonly matchService: MatchService,
     ) {}
@@ -55,14 +63,12 @@ export class DeckService implements OnModuleInit {
                 continue;
             }
 
-            await this.deckRepository.update(
-                {
-                    id: In(targetIds),
-                },
-                {
-                    recognizedName: deck.recognizedName,
-                },
-            );
+            await this.deckRepository.update({ id: In(targetIds) }, { recognizedName: deck.recognizedName });
+        }
+
+        const winRateDataCount = await this.winRateDataRepository.count();
+        if (!winRateDataCount) {
+            await this.winRateQueue.add("migrate");
         }
     }
 
@@ -102,12 +108,34 @@ export class DeckService implements OnModuleInit {
 
         return this.deckRepository.save(deck);
     }
-
     public findById(deckId: Deck["id"]) {
         return this.deckRepository.findOne({
             where: {
                 id: deckId,
             },
+        });
+    }
+
+    public async registerWinRateData(match: Match) {
+        const matchResult = await this.matchService.getMatchResultData(match);
+        const winRateData = this.composeMatchResultToWinRate(matchResult);
+
+        await this.winRateDataRepository.insert(winRateData);
+    }
+    public composeMatchResultToWinRate(matchResult: MatchResultData[]): WinRateData[] {
+        return matchResult.map<WinRateData>(data => {
+            const winRateData = this.winRateDataRepository.create();
+            winRateData.deckName = data.deckName;
+            winRateData.createdAt = data.matchStartedAt;
+            winRateData.won = data.won;
+            winRateData.player = {
+                id: data.playerId,
+            } as Player;
+            winRateData.match = {
+                id: data.matchId,
+            } as Match;
+
+            return winRateData;
         });
     }
 

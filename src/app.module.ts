@@ -15,11 +15,18 @@ import { CardModule } from "@card/card.module";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
+import { BullModule } from "@nestjs/bull";
 
 delete (config as any).entities;
 
 @Module({
     imports: [
+        BullModule.forRoot({
+            redis: {
+                host: process.env.REDIS_HOST || "localhost",
+                port: parseInt(process.env.REDIS_PORT || "3005", 10),
+            },
+        }),
         TypeOrmModule.forRoot(config),
         GraphQLModule.forRootAsync({
             imports: [],
