@@ -1,5 +1,4 @@
-import * as _ from "lodash";
-import { MoreThan, Repository } from "typeorm";
+import { LessThan, Repository } from "typeorm";
 import * as moment from "moment";
 
 import { Injectable } from "@nestjs/common";
@@ -48,7 +47,7 @@ export class MatchService {
         return this.matchRepository.find({
             where: after
                 ? {
-                      id: MoreThan(after),
+                      id: LessThan(after),
                   }
                 : {},
             take: count,
