@@ -1,12 +1,10 @@
 import * as _ from "lodash";
-import { In, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
-import { Queue } from "bull";
 
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { InjectQueue } from "@nestjs/bull";
 
 import { CardService } from "@card/card.service";
 
@@ -30,48 +28,15 @@ const DECK_TAG_WEIGHTS = {
 };
 
 @Injectable()
-export class DeckService implements OnModuleInit {
+export class DeckService {
     private readonly logger = new Logger(DeckService.name);
 
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @InjectRepository(WinRateData) private readonly winRateDataRepository: Repository<WinRateData>,
-        @InjectQueue("win-rate") private readonly winRateQueue: Queue,
         @Inject(CardService) private readonly cardService: CardService,
         @Inject(MatchService) private readonly matchService: MatchService,
     ) {}
-
-    public async onModuleInit() {
-        const decks = await this.deckRepository
-            .createQueryBuilder()
-            .select("id")
-            .addSelect("recognizedDeckTags")
-            .where("CHAR_LENGTH(recognizedDeckTags) > 0")
-            .andWhere("recognizedDeckTags LIKE '%,%'")
-            .getRawMany<{ id: number; recognizedDeckTags: string }>();
-
-        const grouped = _.groupBy(decks, p => p.recognizedDeckTags) as { [key: string]: typeof decks };
-        for (const [tags, decks] of Object.entries(grouped)) {
-            const targetIds = decks.map(d => d.id);
-
-            const deck = this.deckRepository.create();
-            deck.recognizedDeckTags = tags.split(",");
-
-            this.reorderDeckTag(deck);
-            this.renameDeck(deck);
-
-            if (!deck.recognizedName) {
-                continue;
-            }
-
-            await this.deckRepository.update({ id: In(targetIds) }, { recognizedName: deck.recognizedName });
-        }
-
-        const winRateDataCount = await this.winRateDataRepository.count();
-        if (!winRateDataCount) {
-            await this.winRateQueue.add("migrate");
-        }
-    }
 
     public async create(main: number[], side: number[]) {
         const mainCards = await this.cardService.findByIds(main);
