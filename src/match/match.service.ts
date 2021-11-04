@@ -1,4 +1,4 @@
-import { LessThan, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import * as moment from "moment";
 
 import { Injectable } from "@nestjs/common";
@@ -10,6 +10,7 @@ import Player from "@player/models/player.model";
 import MatchRule from "@match-rule/models/match-rule.model";
 
 import { pubSub } from "@root/pubsub";
+import { MatchFilter } from "@match/models/match-filter.object";
 
 export interface MatchResultData {
     matchId: number;
@@ -43,17 +44,74 @@ export class MatchService {
     public findAll() {
         return this.matchRepository.find();
     }
-    public find(count: number, after?: Match["id"]) {
-        return this.matchRepository.find({
-            where: after
-                ? {
-                      id: LessThan(after),
-                  }
-                : {},
-            take: count,
-            order: {
-                id: "DESC",
-            },
+    public async find(count: number, after?: Match["id"], filter?: MatchFilter) {
+        // SELECT
+        //     `m`.*
+        // FROM
+        //     `matches` `m`
+        // LEFT JOIN `match-rules` `m-r` ON `m`.`matchRuleId` = `m-r`.`id`
+        // WHERE
+        //     `m`.`type` IN ('athletic') AND
+        //     `m-r`.`mode` IN (0, 1)
+
+        let matchTypes: MatchType[] = [];
+        let matchModes: Array<0 | 1 | 2> = [];
+        if (typeof filter === "undefined") {
+            matchModes = [0, 1];
+            matchTypes = [MatchType.Normal, MatchType.Athletic];
+        } else {
+            if (filter.includeNormalMatches) {
+                matchTypes.push(MatchType.Normal);
+            }
+            if (filter.includeTierMatches) {
+                matchTypes.push(MatchType.Athletic);
+            }
+
+            if (filter.includeMatches) {
+                matchModes.push(1);
+            }
+            if (filter.includeSingles) {
+                matchModes.push(0);
+            }
+        }
+
+        let queryBuilder = this.matchRepository
+            .createQueryBuilder("m")
+            .select("`m`.`id`", "id")
+            .leftJoin("match-rules", "m-r", "`m`.`matchRuleId` = `m-r`.`id`")
+            .where("1=1");
+
+        if (matchTypes.length > 0) {
+            queryBuilder = queryBuilder.where("`m`.`type` IN (:matchTypes)", { matchTypes });
+        } else {
+            queryBuilder = queryBuilder.where("`m`.`type` IS NULL");
+        }
+
+        if (matchModes.length > 0) {
+            queryBuilder = queryBuilder.andWhere("`m-r`.`mode` IN (:matchModes)", { matchModes });
+        } else {
+            queryBuilder = queryBuilder.andWhere("`m-r`.`mode` IS NULL");
+        }
+
+        if (after) {
+            queryBuilder = queryBuilder.andWhere("`m`.`id` < :after", { after });
+        }
+
+        const targetIds = await queryBuilder
+            .orderBy("`m`.`id`", "DESC")
+            .offset(0)
+            .limit(count)
+            .getRawMany<{ id: string }>()
+            .then(data => data.map(d => parseInt(d.id, 10)));
+        const matches = await this.matchRepository.findByIds(targetIds);
+
+        return targetIds.map(id => {
+            const target = matches.find(m => m.id === id);
+            if (!target) {
+                throw new Error(`Failed find a match with id: ${id}`);
+            }
+
+            return target;
         });
     }
     public findById(id: number) {

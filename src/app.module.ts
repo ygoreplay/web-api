@@ -34,9 +34,7 @@ delete (config as any).entities;
             useFactory: () => ({
                 installSubscriptionHandlers: true,
                 autoSchemaFile:
-                    process.env.NODE_ENV !== "production"
-                        ? path.join(process.cwd(), "../ygoreplay-app", "./schema.gql")
-                        : path.join(process.cwd(), "./schema.gql"),
+                    process.env.NODE_ENV !== "production" ? path.join(process.cwd(), "../web-app", "./schema.gql") : path.join(process.cwd(), "./schema.gql"),
                 sortSchema: true,
                 cors: {
                     credentials: true,

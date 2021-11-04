@@ -15,6 +15,7 @@ import { MatchRuleService } from "@match-rule/match-rule.service";
 import MatchRule from "@match-rule/models/match-rule.model";
 
 import { pubSub } from "@root/pubsub";
+import { MatchFilter } from "@match/models/match-filter.object";
 
 @Resolver(() => Match)
 export class MatchResolver {
@@ -31,8 +32,12 @@ export class MatchResolver {
     }
 
     @Query(() => [Match])
-    public async matches(@Args("count", { type: () => Int }) count: number, @Args("after", { type: () => Int, nullable: true }) after?: Match["id"]) {
-        return this.matchService.find(count, after);
+    public async matches(
+        @Args("count", { type: () => Int }) count: number,
+        @Args("after", { type: () => Int, nullable: true }) after?: Match["id"],
+        @Args("filter", { type: () => MatchFilter, nullable: true }) filter?: MatchFilter,
+    ) {
+        return this.matchService.find(count, after, filter);
     }
 
     @Query(() => Int)
