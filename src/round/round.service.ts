@@ -12,7 +12,6 @@ import Player from "@player/models/player.model";
 import PlayerDeck from "@round/models/player-deck.model";
 
 const REPLAY_STORAGE_PATH = path.join(process.cwd(), "./replays");
-fs.ensureDirSync(REPLAY_STORAGE_PATH);
 
 @Injectable()
 export class RoundService {
