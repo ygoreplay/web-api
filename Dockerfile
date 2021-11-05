@@ -6,6 +6,8 @@ RUN apk add --update --no-cache curl git openssh
 USER node
 WORKDIR /home/node
 
+RUN mkdir /home/node/replays
+RUN chown -R node:node /home/node/replays
 RUN mkdir /home/node/.ssh
 RUN chown -R node:node /home/node/.ssh
 
