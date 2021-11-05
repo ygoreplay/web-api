@@ -8,6 +8,7 @@ WORKDIR /home/node
 
 RUN mkdir /home/node/replays
 RUN chown -R node:node /home/node/replays
+RUN chmod 777 /home/node/replays
 RUN mkdir /home/node/.ssh
 RUN chown -R node:node /home/node/.ssh
 
