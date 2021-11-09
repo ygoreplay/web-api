@@ -7,10 +7,16 @@ import { Card } from "@card/models/Card.model";
 import { DeckService } from "@deck/deck.service";
 import Deck from "@deck/models/deck.model";
 import { WinRate } from "@deck/models/win-rate.object";
+import { DeckUsage } from "@deck/models/deck-usage.object";
 
 @Resolver(() => Deck)
 export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
+
+    @Query(() => [DeckUsage])
+    public async topUsageDecks(@Args("count", { type: () => Int }) count: number) {
+        return this.deckService.getTopUsageDecks(count);
+    }
 
     @Query(() => [WinRate])
     public async winRate(@Args("count", { type: () => Int, defaultValue: 10 }) count: number) {

@@ -16,6 +16,7 @@ import { WinRateData } from "@deck/models/win-rate.model";
 import Match from "@match/models/match.model";
 import Player from "@player/models/player.model";
 import { Cron } from "@nestjs/schedule";
+import { DeckUsage } from "@deck/models/deck-usage.object";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -240,6 +241,44 @@ export class DeckService {
                     side: row.extra.split(",").map(p => parseInt(p, 10)),
                 })),
             );
+    }
+    public async getTopUsageDecks(count: number): Promise<DeckUsage[]> {
+        const date = moment().startOf("minute").subtract(30, "minutes");
+        const data = await this.deckRepository
+            .createQueryBuilder("d")
+            .select("`d`.`recognizedName`", "name")
+            .addSelect("`d`.`recognizedDeckTags`", "tags")
+            .addSelect("COUNT(`d`.`recognizedName`)", "count")
+            .where("`d`.`createdAt` > :date", { date: date.format("YYYY-MM-DD HH:mm:ss") })
+            .groupBy("`d`.`recognizedName`")
+            .addGroupBy("`d`.`recognizedDeckTags`")
+            .getRawMany<{ name: string; tags: string; count: string }>()
+            .then(rows => rows.map(row => ({ name: row.name, tags: row.tags.split(",").filter(s => Boolean(s)), count: parseInt(row.count, 10) })));
+
+        const items = _.chain(data)
+            .keyBy("name")
+            .mapValues(d => d)
+            .value();
+
+        for (const item of data) {
+            for (const tag of item.tags) {
+                if (!(tag in items)) {
+                    continue;
+                }
+
+                items[tag].count += item.count;
+            }
+        }
+
+        return _.chain(items)
+            .values()
+            .filter(p => p.tags.length === 0)
+            .sortBy(p => p.count)
+            .reverse()
+            .filter(p => USAGE_BLACKLIST.indexOf(p.name) === -1)
+            .slice(0, count)
+            .map(p => ({ deckName: p.name, count: p.count }))
+            .value();
     }
 
     @Cron("0 */5 * * * *")
