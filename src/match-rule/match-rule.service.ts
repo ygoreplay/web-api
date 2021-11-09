@@ -68,4 +68,17 @@ export class MatchRuleService {
 
         return matchRule;
     }
+
+    public async getAvailableBanLists() {
+        const allBanLists = await this.matchRuleRepository
+            .createQueryBuilder("m-r")
+            .select("`m-r`.`banListDate`", "date")
+            .addSelect("`m-r`.`isTCG`", "isTCG")
+            .groupBy("`date`")
+            .addGroupBy("`isTCG`")
+            .getRawMany<{ date: string; isTCG: string }>()
+            .then(data => data.map(i => ({ date: i.date, isTCG: Boolean(parseInt(i.isTCG, 10)) })));
+
+        return allBanLists.map(bl => `${bl.date} ${bl.isTCG ? "TCG" : "OCG"}`);
+    }
 }
