@@ -46,7 +46,7 @@ export class DeckService {
         deck.sideIds = side;
 
         try {
-            const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
+            const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3006";
             const formData = new FormData();
             formData.append("deck", [...deck.mainIds, "#extra", ...deck.extraIds, "!side", ...deck.sideIds].join("\n"));
 
@@ -200,7 +200,7 @@ export class DeckService {
 
     @Cron("0 */5 * * * *")
     private async pollIdentifierUpdate() {
-        const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3003";
+        const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3006";
 
         await fetch(`${identifierBaseUrl}/update`, {
             method: "POST",
