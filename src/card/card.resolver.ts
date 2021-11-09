@@ -3,6 +3,7 @@ import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root } from
 
 import { CardService } from "@card/card.service";
 import { Card } from "@card/models/Card.model";
+import { CardUsage } from "@card/models/card-usage.object";
 
 enum CardType {
     Monster = "monster",
@@ -27,6 +28,11 @@ registerEnumType(MonsterCardType, { name: "MonsterCardType" });
 @Resolver(() => Card)
 export class CardResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService) {}
+
+    @Query(() => [CardUsage])
+    public async topUsageCards(@Args("count", { type: () => Int }) count: number) {
+        return this.cardService.getTopUsageCards(count);
+    }
 
     @Query(() => Card, { nullable: true })
     public async card(@Args("id", { type: () => Int }) id: number) {

@@ -1,5 +1,6 @@
 import * as path from "path";
 import { Request } from "express";
+import { ApolloServerPluginInlineTrace } from "apollo-server-core";
 
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
@@ -40,6 +41,7 @@ delete (config as any).entities;
                     credentials: true,
                     origin: true,
                 },
+                plugins: [ApolloServerPluginInlineTrace()],
                 context: async ({ req }: { req: Request }): Promise<Omit<GraphQLContext, "req">> => {
                     return {
                         ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress || "Unknown IP Address",

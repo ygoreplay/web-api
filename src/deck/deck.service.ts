@@ -1,3 +1,4 @@
+import * as moment from "moment";
 import * as _ from "lodash";
 import { Repository } from "typeorm";
 import fetch from "node-fetch";
@@ -220,6 +221,25 @@ export class DeckService {
         }
 
         return result;
+    }
+
+    public async getAllDecks() {
+        const date = moment().startOf("minute").subtract(30, "minutes");
+
+        return this.deckRepository
+            .createQueryBuilder("d")
+            .select("`d`.`main`", "main")
+            .addSelect("`d`.`extra`", "extra")
+            .addSelect("`d`.`side`", "side")
+            .where("`d`.`createdAt` > :date", { date: date.format("YYYY-MM-DD HH:mm:ss") })
+            .getRawMany<{ main: string; extra: string; side: string }>()
+            .then(rows =>
+                rows.map(row => ({
+                    main: row.main.split(",").map(p => parseInt(p, 10)),
+                    extra: row.extra.split(",").map(p => parseInt(p, 10)),
+                    side: row.extra.split(",").map(p => parseInt(p, 10)),
+                })),
+            );
     }
 
     @Cron("0 */5 * * * *")
