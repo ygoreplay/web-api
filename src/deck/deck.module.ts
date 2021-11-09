@@ -17,7 +17,7 @@ import { MatchModule } from "@match/match.module";
             name: "win-rate",
         }),
         TypeOrmModule.forFeature([Deck, WinRateData]),
-        CardModule,
+        forwardRef(() => CardModule),
         forwardRef(() => MatchModule),
     ],
     providers: [DeckResolver, DeckService, WinRateProcessor],

@@ -13,6 +13,7 @@ import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
 import { YGOProCard } from "@card/models/Card.sqlite";
 import { CardUsage } from "@card/models/card-usage.object";
+import { pubSub } from "@root/pubsub";
 
 @Injectable()
 export class CardService implements OnModuleInit {
@@ -78,7 +79,6 @@ export class CardService implements OnModuleInit {
 
         return [savedCommitId !== commits.data[0].sha, fs.existsSync("./cards.cdb") && (await this.cardRepository.count()) === 0];
     }
-
     private async doUpdate() {
         this.logger.log("Check if there's new card database...");
 
@@ -201,6 +201,12 @@ export class CardService implements OnModuleInit {
             cardUsage.count = p[1];
 
             return cardUsage;
+        });
+    }
+    public async noticeTopUsageCardsUpdated() {
+        const topUsageCards = await this.getTopUsageCards(10);
+        await pubSub.publish("cardUsageListUpdated", {
+            cardUsageListUpdated: topUsageCards,
         });
     }
 }

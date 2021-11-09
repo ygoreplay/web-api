@@ -4,7 +4,7 @@ import { Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
 
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { CardService } from "@card/card.service";
@@ -42,8 +42,8 @@ export class DeckService {
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @InjectRepository(WinRateData) private readonly winRateDataRepository: Repository<WinRateData>,
-        @Inject(CardService) private readonly cardService: CardService,
-        @Inject(MatchService) private readonly matchService: MatchService,
+        @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
+        @Inject(forwardRef(() => MatchService)) private readonly matchService: MatchService,
     ) {}
 
     public async create(main: number[], side: number[]) {
@@ -224,7 +224,7 @@ export class DeckService {
     }
 
     public async getAllDecks() {
-        const date = moment().startOf("minute").subtract(30, "minutes");
+        const date = moment().startOf("minute").subtract(5, "minutes");
 
         return this.deckRepository
             .createQueryBuilder("d")

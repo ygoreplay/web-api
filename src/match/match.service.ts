@@ -1,7 +1,7 @@
 import { Brackets, Repository } from "typeorm";
 import * as moment from "moment";
 
-import { Injectable } from "@nestjs/common";
+import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import Match, { MatchType } from "@match/models/match.model";
@@ -11,6 +11,7 @@ import MatchRule from "@match-rule/models/match-rule.model";
 
 import { pubSub } from "@root/pubsub";
 import { MatchFilter } from "@match/models/match-filter.object";
+import { CardService } from "@card/card.service";
 
 export interface MatchResultData {
     matchId: number;
@@ -39,7 +40,10 @@ export class MatchService {
         }
     }
 
-    public constructor(@InjectRepository(Match) private readonly matchRepository: Repository<Match>) {}
+    public constructor(
+        @InjectRepository(Match) private readonly matchRepository: Repository<Match>,
+        @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
+    ) {}
 
     public findAll() {
         return this.matchRepository.find();
@@ -207,6 +211,11 @@ export class MatchService {
         const result = this.matchRepository.save(match);
         await pubSub.publish("newMatchCreated", { newMatchCreated: result });
         await pubSub.publish("matchCountUpdated", { matchCountUpdated: await this.count() });
+
+        const matchCount = await this.matchRepository.count();
+        if (matchCount % 5 === 0) {
+            await this.cardService.noticeTopUsageCardsUpdated();
+        }
 
         return result;
     }

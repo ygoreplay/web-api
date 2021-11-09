@@ -1,9 +1,10 @@
 import { Inject } from "@nestjs/common";
-import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root } from "@nestjs/graphql";
+import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root, Subscription } from "@nestjs/graphql";
 
 import { CardService } from "@card/card.service";
 import { Card } from "@card/models/Card.model";
 import { CardUsage } from "@card/models/card-usage.object";
+import { pubSub } from "@root/pubsub";
 
 enum CardType {
     Monster = "monster",
@@ -47,6 +48,11 @@ export class CardResolver {
     @Query(() => Int)
     public async cardCount() {
         return this.cardService.count();
+    }
+
+    @Subscription(() => [CardUsage])
+    public async cardUsageListUpdated() {
+        return pubSub.asyncIterator("cardUsageListUpdated");
     }
 
     @ResolveField(() => [MonsterCardType])
