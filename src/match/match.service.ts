@@ -118,8 +118,6 @@ export class MatchService {
             );
         }
 
-        console.log(queryBuilder.getSql());
-
         const targetIds = await queryBuilder
             .orderBy("`m`.`id`", "DESC")
             .offset(0)
