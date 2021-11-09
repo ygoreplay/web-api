@@ -27,6 +27,13 @@ const DECK_TAG_WEIGHTS = {
     용사: -8,
 };
 
+const USAGE_BLACKLIST: string[] = ["용사"];
+
+interface UsageData {
+    name: string;
+    count: number;
+}
+
 @Injectable()
 export class DeckService {
     private readonly logger = new Logger(DeckService.name);
@@ -83,40 +90,22 @@ export class DeckService {
         });
     }
 
-    private generateDeckUsageObject(res: { name: string; count: string; tags: string }[]) {
-        return res.map(item => ({
-            name: item.name,
-            tags: !item.tags ? [] : item.tags.split(","),
-            count: parseInt(item.count, 10),
-            key: `${item.name}|${item.tags}`,
-        }));
-    }
-
     public async getWinRates(count: number): Promise<[string, number][]> {
-        const usageData = await this.getDeckUsages();
+        const usageData = (await this.getDeckUsages()).slice(0, count);
         const winningData = await this.getDeckUsages(true);
-        const winningMap = _.chain(winningData).keyBy("key").mapValues("count").value();
 
-        const topUsages = usageData.slice(0, count);
-        const restUsages = usageData.slice(count);
-        const results: [string, number, number][] = [];
-        for (const item of topUsages) {
-            const result: [string, number, number] = [item.name, item.count, winningMap[item.key]];
-            const otherUsages = restUsages.filter(data => data.tags.indexOf(item.name) >= 0);
-            for (const usingDeck of otherUsages) {
-                result[1] += usingDeck.count;
-                result[2] += winningMap[usingDeck.key] || 0;
+        const result: [string, number][] = [];
+        for (const item of usageData) {
+            const winningItem = winningData.find(i => i.name === item.name);
+            if (!winningItem) {
+                throw new Error(`Failed to find winning data of deck: ${item.name}`);
             }
 
-            results.push(result);
+            result.push([item.name, winningItem.count / item.count]);
         }
 
-        return _.chain(results)
-            .map<[string, number]>(item => {
-                const winRate = item[2] / item[1];
-                return [item[0], Number.isNaN(winRate) ? 0 : winRate];
-            })
-            .sortBy(p => p[1])
+        return _.chain(result)
+            .orderBy(p => p[1])
             .reverse()
             .value();
     }
@@ -160,6 +149,8 @@ export class DeckService {
             .select("`wrd`.`deckName`", "name")
             .addSelect("`wrd`.`deckTags`", "tags")
             .addSelect("COUNT(`wrd`.`deckName`)", "count")
+            .innerJoin("matches", "m", "`m`.`id` = `wrd`.`matchId`")
+            .where("`m`.`type` = 'athletic'")
             .groupBy("`wrd`.`deckName`")
             .addGroupBy("`wrd`.`deckTags`")
             .orderBy("`count`", "DESC");
@@ -168,7 +159,40 @@ export class DeckService {
             queryBuilder = queryBuilder.where("`wrd`.`won` = 1");
         }
 
-        return queryBuilder.getRawMany<{ name: string; count: string; tags: string }>().then(this.generateDeckUsageObject);
+        const data = await queryBuilder.getRawMany<{ name: string; count: string; tags: string }>();
+        const results: { [deckName: string]: UsageData } = {};
+        for (const item of data) {
+            if (!item.tags) {
+                if (!results[item.name]) {
+                    results[item.name] = {
+                        name: item.name,
+                        count: 0,
+                    };
+                }
+
+                results[item.name].count += parseInt(item.count, 10);
+                continue;
+            }
+
+            const deckTags = item.tags.split(",");
+            for (const tag of deckTags) {
+                if (!results[tag]) {
+                    results[tag] = {
+                        name: tag,
+                        count: 0,
+                    };
+                }
+
+                results[tag].count += parseInt(item.count, 10);
+            }
+        }
+
+        return _.chain(results)
+            .values()
+            .orderBy(p => p.count)
+            .reverse()
+            .filter(p => USAGE_BLACKLIST.indexOf(p.name) < 0)
+            .value();
     }
 
     private renameDeck(deck: Deck) {
