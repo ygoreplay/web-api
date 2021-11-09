@@ -13,4 +13,7 @@ export class MatchFilter {
 
     @Field(() => Boolean)
     public includeNormalMatches: boolean;
+
+    @Field(() => [String])
+    public banLists: string[];
 }

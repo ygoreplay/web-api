@@ -1,4 +1,4 @@
-import { Repository } from "typeorm";
+import { Brackets, Repository } from "typeorm";
 import * as moment from "moment";
 
 import { Injectable } from "@nestjs/common";
@@ -96,6 +96,29 @@ export class MatchService {
         if (after) {
             queryBuilder = queryBuilder.andWhere("`m`.`id` < :after", { after });
         }
+
+        if (filter?.banLists && filter.banLists.length >= 0) {
+            queryBuilder = queryBuilder.andWhere(
+                new Brackets(qb => {
+                    let isUsed = false;
+                    for (let i = 0; i < filter.banLists.length; i++) {
+                        const item = filter.banLists[i];
+                        const [date, cardPool] = item.split(" ");
+                        const targetFunction = isUsed ? qb.orWhere : qb.where;
+                        qb = targetFunction.bind(qb)(`(\`m-r\`.\`banListDate\` = :banListDate${i} AND \`m-r\`.\`isTCG\` = :isTCG${i})`, {
+                            [`banListDate${i}`]: date,
+                            [`isTCG${i}`]: cardPool === "TCG",
+                        });
+
+                        if (!isUsed) {
+                            isUsed = true;
+                        }
+                    }
+                }),
+            );
+        }
+
+        console.log(queryBuilder.getSql());
 
         const targetIds = await queryBuilder
             .orderBy("`m`.`id`", "DESC")
