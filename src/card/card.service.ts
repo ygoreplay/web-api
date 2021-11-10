@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import * as fs from "fs-extra";
 import fetch from "node-fetch";
-import { createConnection, Not, Repository } from "typeorm";
+import { createConnection, Like, Not, Repository } from "typeorm";
 
 import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -14,6 +14,7 @@ import { Text } from "@card/models/Text.model";
 import { YGOProCard } from "@card/models/Card.sqlite";
 import { CardUsage } from "@card/models/card-usage.object";
 import { pubSub } from "@root/pubsub";
+import { CardSuggestion } from "@card/models/card-suggestion.object";
 
 @Injectable()
 export class CardService implements OnModuleInit {
@@ -64,6 +65,13 @@ export class CardService implements OnModuleInit {
         });
 
         return data[0];
+    }
+    public async findAll() {
+        return this.cardRepository.find({
+            order: {
+                id: "ASC",
+            },
+        });
     }
 
     private async checkIfUpdateNeeded() {
@@ -166,6 +174,27 @@ export class CardService implements OnModuleInit {
 
         await connection.close();
         await fs.writeFile(".db-last-commit", commits.data[0].sha);
+    }
+
+    public async suggestCards(query: string, count: number) {
+        const resultCards = await this.cardRepository.find({
+            where: {
+                text: {
+                    name: Like(`%${query}%`),
+                },
+            },
+            take: count,
+            relations: ["text"],
+        });
+
+        return resultCards.map(card => {
+            const cardSuggestion = new CardSuggestion();
+            cardSuggestion.card = card;
+            cardSuggestion.id = card.id;
+            cardSuggestion.name = card.text.name;
+
+            return cardSuggestion;
+        });
     }
 
     public async getTopUsageCards(count: number) {

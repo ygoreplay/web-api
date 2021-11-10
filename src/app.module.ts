@@ -14,10 +14,13 @@ import { RoundModule } from "@round/round.module";
 import { DeckModule } from "@deck/deck.module";
 import { PlayerModule } from "@player/player.module";
 import { MatchRuleModule } from "@match-rule/match-rule.module";
+
 import { CardModule } from "@card/card.module";
+import { CardService } from "@card/card.service";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
+import { createCardIndexLoader } from "@card/card.loader";
 delete (config as any).entities;
 
 @Module({
@@ -31,8 +34,8 @@ delete (config as any).entities;
         }),
         TypeOrmModule.forRoot(config),
         GraphQLModule.forRootAsync({
-            imports: [],
-            useFactory: () => ({
+            imports: [CardModule],
+            useFactory: (cardService: CardService) => ({
                 installSubscriptionHandlers: true,
                 autoSchemaFile:
                     process.env.NODE_ENV !== "production" ? path.join(process.cwd(), "../web-app", "./schema.gql") : path.join(process.cwd(), "./schema.gql"),
@@ -45,10 +48,11 @@ delete (config as any).entities;
                 context: async ({ req }: { req: Request }): Promise<Omit<GraphQLContext, "req">> => {
                     return {
                         ip: req.headers["x-forwarded-for"] || req.socket.remoteAddress || "Unknown IP Address",
+                        cardIndexLoader: createCardIndexLoader(cardService),
                     };
                 },
             }),
-            inject: [],
+            inject: [CardService],
         }),
         ReplayModule,
         MatchModule,
