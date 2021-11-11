@@ -61,4 +61,9 @@ export class DeckResolver {
     public async side(@Root() deck: Deck) {
         return this.cardService.findByIds(deck.sideIds);
     }
+
+    @ResolveField(() => DeckTitleCard, { nullable: true })
+    public async titleCard(@Root() root: Deck) {
+        return this.deckService.getTitleCard(root.recognizedName);
+    }
 }

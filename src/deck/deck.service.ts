@@ -319,7 +319,13 @@ export class DeckService {
 
         return this.deckTitleCardRepository.save(deckTitleCards);
     }
-
+    public async getTitleCard(recognizedName: string) {
+        return this.deckTitleCardRepository.findOne({
+            where: {
+                name: recognizedName,
+            },
+        });
+    }
     public async getDeckTypes() {
         const items = await this.deckRepository
             .createQueryBuilder("d")
