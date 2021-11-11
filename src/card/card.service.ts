@@ -38,15 +38,10 @@ export class CardService implements OnModuleInit {
     }
 
     public async findByIds(ids: (string | number)[]) {
-        const cards = await this.cardRepository.findByIds(ids);
-        return ids.map(id => {
-            const card = cards.find(c => c.id.toString() === id.toString());
-            if (!card) {
-                throw new Error(`Failed to find a card with id: ${id}`);
-            }
-
-            return card;
-        });
+        return await this.cardRepository
+            .createQueryBuilder("c")
+            .where("`c`.`id` IN (:ids)", { ids: _.uniq(ids) })
+            .getMany();
     }
     public async findById(id: Card["id"]) {
         return this.cardRepository.findOne({
@@ -237,5 +232,12 @@ export class CardService implements OnModuleInit {
         await pubSub.publish("cardUsageListUpdated", {
             cardUsageListUpdated: topUsageCards,
         });
+    }
+
+    public async findTextByIds(cardIds: ReadonlyArray<number>) {
+        const texts = await this.textRepository.findByIds([...cardIds]);
+        const textMap = _.chain(texts).keyBy("id").mapValues().values();
+
+        return cardIds.map(id => textMap[id]);
     }
 }

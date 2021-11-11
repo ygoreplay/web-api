@@ -8,10 +8,16 @@ import { DeckService } from "@deck/deck.service";
 import Deck from "@deck/models/deck.model";
 import { WinRate } from "@deck/models/win-rate.object";
 import { DeckUsage } from "@deck/models/deck-usage.object";
+import { DeckType } from "@deck/models/deck-type.object";
 
 @Resolver(() => Deck)
 export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
+
+    @Query(() => [DeckType])
+    public async deckTypes() {
+        return this.deckService.getDeckTypes();
+    }
 
     @Query(() => [DeckUsage])
     public async topUsageDecks(@Args("count", { type: () => Int }) count: number) {

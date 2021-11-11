@@ -17,6 +17,7 @@ import Match from "@match/models/match.model";
 import Player from "@player/models/player.model";
 import { Cron } from "@nestjs/schedule";
 import { DeckUsage } from "@deck/models/deck-usage.object";
+import { DeckType } from "@deck/models/deck-type.object";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -279,6 +280,26 @@ export class DeckService {
             .slice(0, count)
             .map(p => ({ deckName: p.name, count: p.count }))
             .value();
+    }
+
+    public async getDeckTypes() {
+        const items = await this.deckRepository
+            .createQueryBuilder("d")
+            .select("`d`.`recognizedName`", "name")
+            .addSelect("MAX(`d`.`id`)", "id")
+            .addSelect("COUNT(`d`.`recognizedName`)", "count")
+            .groupBy("`name`")
+            .orderBy("`count`", "DESC")
+            .getRawMany<{ name: string; id: string; count: string }>()
+            .then(rows => rows.map(row => ({ name: row.name, id: parseInt(row.id, 10), count: parseInt(row.count, 10) })));
+
+        return items.map(item => {
+            const deckType = new DeckType();
+            deckType.id = item.id;
+            deckType.name = item.name;
+
+            return deckType;
+        });
     }
 
     @Cron("0 */5 * * * *")

@@ -17,10 +17,10 @@ import { MatchRuleModule } from "@match-rule/match-rule.module";
 
 import { CardModule } from "@card/card.module";
 import { CardService } from "@card/card.service";
+import { createCardIndexLoader } from "@card/card.loader";
 
 import * as config from "@root/ormconfig";
 import { GraphQLContext } from "@root/types";
-import { createCardIndexLoader } from "@card/card.loader";
 delete (config as any).entities;
 
 @Module({
