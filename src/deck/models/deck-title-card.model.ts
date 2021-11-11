@@ -2,9 +2,9 @@ import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGenerate
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 import { Card } from "@card/models/Card.model";
 
-@Entity({ name: "deck-title" })
+@Entity({ name: "deck-title-card" })
 @ObjectType()
-export class DeckTitle {
+export class DeckTitleCard {
     @Field(() => Int)
     @PrimaryGeneratedColumn({ type: "int" })
     public id!: number;
@@ -28,6 +28,7 @@ export class DeckTitle {
     @JoinColumn()
     public card!: Card;
 
-    @RelationId((entity: DeckTitle) => entity.card)
+    @Field(() => Int)
+    @RelationId((entity: DeckTitleCard) => entity.card)
     public cardId!: Card["id"];
 }

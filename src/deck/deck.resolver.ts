@@ -1,5 +1,5 @@
 import { Inject } from "@nestjs/common";
-import { Args, Int, Query, ResolveField, Resolver, Root } from "@nestjs/graphql";
+import { Args, Int, Mutation, Query, ResolveField, Resolver, Root } from "@nestjs/graphql";
 
 import { CardService } from "@card/card.service";
 import { Card } from "@card/models/Card.model";
@@ -9,10 +9,22 @@ import Deck from "@deck/models/deck.model";
 import { WinRate } from "@deck/models/win-rate.object";
 import { DeckUsage } from "@deck/models/deck-usage.object";
 import { DeckType } from "@deck/models/deck-type.object";
+import { DeckTitleCard } from "./models/deck-title-card.model";
+import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
 
 @Resolver(() => Deck)
 export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
+
+    @Query(() => Deck, { nullable: true })
+    public async deck(@Args("id", { type: () => Int }) id: number) {
+        return this.deckService.findById(id);
+    }
+
+    @Query(() => [DeckTitleCard])
+    public async deckTitleCards() {
+        return this.deckService.getAllTitleCards();
+    }
 
     @Query(() => [DeckType])
     public async deckTypes() {
@@ -28,6 +40,11 @@ export class DeckResolver {
     public async winRate(@Args("count", { type: () => Int, defaultValue: 10 }) count: number) {
         const winRate = await this.deckService.getWinRates(count);
         return winRate.map<WinRate>(p => ({ rate: p[1], deckName: p[0] }));
+    }
+
+    @Mutation(() => [DeckTitleCard])
+    public async registerDeckTitleCards(@Args("input", { type: () => [DeckTitleCardInput] }) input: DeckTitleCardInput[]) {
+        return this.deckService.registerDeckTitleCards(input);
     }
 
     @ResolveField(() => [Card])

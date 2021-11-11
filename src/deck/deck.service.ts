@@ -1,8 +1,9 @@
 import * as moment from "moment";
 import * as _ from "lodash";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
+import { Cron } from "@nestjs/schedule";
 
 import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -10,14 +11,16 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { CardService } from "@card/card.service";
 
 import { MatchResultData, MatchService } from "@match/match.service";
+import Match from "@match/models/match.model";
+
+import Player from "@player/models/player.model";
 
 import Deck from "@deck/models/deck.model";
-import { WinRateData } from "@deck/models/win-rate.model";
-import Match from "@match/models/match.model";
-import Player from "@player/models/player.model";
-import { Cron } from "@nestjs/schedule";
 import { DeckUsage } from "@deck/models/deck-usage.object";
 import { DeckType } from "@deck/models/deck-type.object";
+import { DeckTitleCard } from "@deck/models/deck-title-card.model";
+import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
+import { WinRateData } from "@deck/models/win-rate.model";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -44,6 +47,7 @@ export class DeckService {
     public constructor(
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @InjectRepository(WinRateData) private readonly winRateDataRepository: Repository<WinRateData>,
+        @InjectRepository(DeckTitleCard) private readonly deckTitleCardRepository: Repository<DeckTitleCard>,
         @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
         @Inject(forwardRef(() => MatchService)) private readonly matchService: MatchService,
     ) {}
@@ -280,6 +284,40 @@ export class DeckService {
             .slice(0, count)
             .map(p => ({ deckName: p.name, count: p.count }))
             .value();
+    }
+
+    public async getAllTitleCards() {
+        return this.deckTitleCardRepository.find();
+    }
+    public async registerDeckTitleCards(input: DeckTitleCardInput[]) {
+        const targetDeckNames = input.map(item => item.deckName);
+        const originalDeckTitleCards = await this.deckTitleCardRepository.find({
+            where: {
+                name: In(targetDeckNames),
+            },
+        });
+
+        const cards = await this.cardService.findByIds(input.map(item => item.cardId));
+        const deckTitleCards = input.map(item => {
+            const targetCard = cards.find(card => card.id === item.cardId);
+            if (!targetCard) {
+                throw new Error(`Failed to find card with id: ${item.cardId}`);
+            }
+
+            const original = originalDeckTitleCards.find(dtc => dtc.name === item.deckName);
+            if (original) {
+                original.card = targetCard;
+                return original;
+            }
+
+            const deckTitleCard = this.deckTitleCardRepository.create();
+            deckTitleCard.card = targetCard;
+            deckTitleCard.name = item.deckName;
+
+            return deckTitleCard;
+        });
+
+        return this.deckTitleCardRepository.save(deckTitleCards);
     }
 
     public async getDeckTypes() {

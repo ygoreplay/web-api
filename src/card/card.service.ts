@@ -38,10 +38,12 @@ export class CardService implements OnModuleInit {
     }
 
     public async findByIds(ids: (string | number)[]) {
-        return await this.cardRepository
-            .createQueryBuilder("c")
-            .where("`c`.`id` IN (:ids)", { ids: _.uniq(ids) })
-            .getMany();
+        const cards = _.chain(await this.cardRepository.findByIds(ids))
+            .keyBy("id")
+            .mapValues()
+            .value();
+
+        return ids.map(id => cards[id]);
     }
     public async findById(id: Card["id"]) {
         return this.cardRepository.findOne({
