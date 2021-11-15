@@ -8,6 +8,7 @@ const config: Parameters<typeof TypeOrmModule["forRoot"]>[0] = {
     username: process.env.DB_USER ? process.env.DB_USER : "root",
     password: process.env.DB_PASSWORD ? process.env.DB_PASSWORD : "password",
     database: "ygoreplay-api",
+    bigNumberStrings: false,
     autoLoadEntities: true,
     dropSchema: false,
     entities: ["./dist/**/*.model{.ts,.js}"],
