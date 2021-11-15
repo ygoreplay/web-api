@@ -1,7 +1,8 @@
-import { BaseEntity, Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from "typeorm";
+import { BaseEntity, Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryColumn, RelationId } from "typeorm";
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 
 import { Text } from "@card/models/Text.model";
+import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 
 @ObjectType()
 @Entity({ name: "cards" })
@@ -84,4 +85,13 @@ export class Card extends BaseEntity {
     @OneToOne(() => Text, { eager: true })
     @JoinColumn({ name: "id" })
     public text!: Text;
+
+    //
+    // Relation (One-to-Many) - DeckTitleCard => Card
+    //
+    @OneToMany(() => DeckTitleCard, deckTitleCard => deckTitleCard.card)
+    public titleCards!: DeckTitleCard[];
+
+    @RelationId((entity: Card) => entity.titleCards)
+    public titledCardIds!: DeckTitleCard["id"][];
 }

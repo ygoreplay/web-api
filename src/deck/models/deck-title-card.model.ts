@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 import { Card } from "@card/models/Card.model";
 
@@ -22,13 +22,11 @@ export class DeckTitleCard {
     public updatedAt: Date;
 
     //
-    // Relation (One-to-One) - Card => DeckTitle
+    // Relation (Many-to-One) - Card => DeckTitleCard
     //
-    @OneToOne(() => Card)
-    @JoinColumn()
+    @ManyToOne(() => Card, card => card.titleCards)
     public card!: Card;
 
-    @Field(() => Int)
     @RelationId((entity: DeckTitleCard) => entity.card)
     public cardId!: Card["id"];
 }
