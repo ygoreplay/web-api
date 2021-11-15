@@ -2,7 +2,7 @@ import * as _ from "lodash";
 import { Like, Not, Repository } from "typeorm";
 import { Queue } from "bull";
 
-import { forwardRef, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { forwardRef, Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { InjectQueue } from "@nestjs/bull";
 
@@ -14,6 +14,7 @@ import { CardUsage } from "@card/models/card-usage.object";
 import { CardSuggestion } from "@card/models/card-suggestion.object";
 
 import { pubSub } from "@root/pubsub";
+import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class CardService implements OnModuleInit {
@@ -27,7 +28,6 @@ export class CardService implements OnModuleInit {
     public async onModuleInit() {
         await this.cardUpdateQueue.add("update");
     }
-
     public async count() {
         return this.cardRepository.count();
     }
@@ -127,5 +127,10 @@ export class CardService implements OnModuleInit {
         await pubSub.publish("cardUsageListUpdated", {
             cardUsageListUpdated: topUsageCards,
         });
+    }
+
+    @Cron("0 0 * * * *")
+    public async doUpdate() {
+        await this.cardUpdateQueue.add("update");
     }
 }
