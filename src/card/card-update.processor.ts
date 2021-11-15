@@ -46,7 +46,10 @@ export class CardUpdateProcessor {
         });
 
         if (added.length > 0) {
-            await oldRepository.save(added);
+            const chunks = _.chunk(added, 300);
+            for (const chunk of chunks) {
+                await oldRepository.createQueryBuilder().insert().values(chunk).execute();
+            }
         }
 
         const deletedCards = _.differenceBy(oldEntities, newEntities, c => c.id);
@@ -127,8 +130,8 @@ export class CardUpdateProcessor {
         });
 
         try {
-            await this.updateEntities(connection.getRepository(YGOProCard));
             await this.updateEntities(connection.getRepository(Text));
+            await this.updateEntities(connection.getRepository(YGOProCard));
         } catch (e) {
             this.logger.error("Failed to update cards: ");
             console.error(e);
