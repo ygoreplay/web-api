@@ -41,6 +41,7 @@ export class CardCropperItem {
     @JoinColumn()
     public card!: Card;
 
+    @Field(() => Int)
     @RelationId((entity: CardCropperItem) => entity.card)
     public cardId!: Card["id"];
 }

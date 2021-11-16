@@ -1,12 +1,15 @@
 import { Inject } from "@nestjs/common";
-import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root, Subscription } from "@nestjs/graphql";
+import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root, Subscription, Context } from "@nestjs/graphql";
 
 import { CardService } from "@card/card.service";
+import { CardCropperService } from "@card/card-cropper.service";
 import { Card } from "@card/models/Card.model";
 import { CardUsage } from "@card/models/card-usage.object";
 import { CardSuggestion } from "@card/models/card-suggestion.object";
 
 import { pubSub } from "@root/pubsub";
+import { GraphQLContext } from "@root/types";
+import { CardCropperItem } from "@card/models/card-cropper-item.model";
 
 enum CardType {
     Monster = "monster",
@@ -30,7 +33,10 @@ registerEnumType(MonsterCardType, { name: "MonsterCardType" });
 
 @Resolver(() => Card)
 export class CardResolver {
-    public constructor(@Inject(CardService) private readonly cardService: CardService) {}
+    public constructor(
+        @Inject(CardService) private readonly cardService: CardService,
+        @Inject(CardCropperService) private readonly cardCropperService: CardCropperService,
+    ) {}
 
     @Query(() => [CardSuggestion])
     public async cardSuggestions(@Args("query", { type: () => String }) query: string, @Args("count", { type: () => Int }) count: number) {
@@ -45,6 +51,11 @@ export class CardResolver {
     @Query(() => Card, { nullable: true })
     public async card(@Args("id", { type: () => Int }) id: number) {
         return this.cardService.findById(id);
+    }
+
+    @Query(() => [Card])
+    public async cards(@Args("ids", { type: () => [Int], nullable: true }) ids: number[] | null | undefined) {
+        return this.cardService.findAll(ids);
     }
 
     @Query(() => Card, { nullable: true })
@@ -99,5 +110,15 @@ export class CardResolver {
         }
 
         return CardType.Spell;
+    }
+
+    @ResolveField(() => Boolean)
+    public async hasCropperItem(@Root() card: Card, @Context() context: GraphQLContext) {
+        return context.cardCropperItemCheckerLoader.load(card.id);
+    }
+
+    @ResolveField(() => CardCropperItem, { nullable: true })
+    public async cropperItem(@Root() card: Card) {
+        return this.cardCropperService.findByCardId(card.id);
     }
 }

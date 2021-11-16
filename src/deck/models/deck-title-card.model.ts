@@ -24,9 +24,11 @@ export class DeckTitleCard {
     //
     // Relation (Many-to-One) - Card => DeckTitleCard
     //
+    @Field(() => Card)
     @ManyToOne(() => Card, card => card.titleCards)
     public card!: Card;
 
+    @Field(() => Int)
     @RelationId((entity: DeckTitleCard) => entity.card)
     public cardId!: Card["id"];
 }

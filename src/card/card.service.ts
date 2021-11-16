@@ -1,5 +1,5 @@
 import * as _ from "lodash";
-import { Like, Not, Repository } from "typeorm";
+import { In, Like, Not, Repository } from "typeorm";
 import { Queue } from "bull";
 
 import { forwardRef, Inject, Injectable, OnModuleInit } from "@nestjs/common";
@@ -58,8 +58,9 @@ export class CardService implements OnModuleInit {
 
         return data[0];
     }
-    public async findAll() {
+    public async findAll(ids?: number[] | null | undefined) {
         return this.cardRepository.find({
+            where: ids ? { id: In(ids) } : undefined,
             order: {
                 id: "ASC",
             },
