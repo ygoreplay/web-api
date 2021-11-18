@@ -25,6 +25,7 @@ import { WinRateData } from "@deck/models/win-rate.model";
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
     괴수카구야: ["미계역", "카구야", "설화"],
+    엔디미온: ["마법족의마을", "마력카운터"],
 });
 
 const DECK_TAG_WEIGHTS = {
