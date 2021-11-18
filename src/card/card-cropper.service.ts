@@ -11,6 +11,9 @@ import { CardCropperDataInput } from "@card/models/card-cropper-data.input";
 export class CardCropperService {
     constructor(@InjectRepository(CardCropperItem) private readonly cardCropperItemRepository: Repository<CardCropperItem>) {}
 
+    public async findAll() {
+        return this.cardCropperItemRepository.find();
+    }
     public findById(id: number) {
         return this.cardCropperItemRepository.findOne({
             where: {

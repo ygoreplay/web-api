@@ -7,6 +7,7 @@ import { CardSuggestionResolver } from "@card/card-suggestion.resolver";
 import { CardUpdateProcessor } from "@card/card-update.processor";
 import { CardCropperResolver } from "@card/card-cropper.resolver";
 import { CardCropperService } from "@card/card-cropper.service";
+import { CardCropperController } from "@card/card-cropper.controller";
 
 import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
@@ -23,6 +24,7 @@ import { BullModule } from "@nestjs/bull";
         TypeOrmModule.forFeature([Card, Text, CardCropperItem]),
         forwardRef(() => DeckModule),
     ],
+    controllers: [CardCropperController],
     providers: [CardService, CardResolver, CardSuggestionResolver, CardUpdateProcessor, CardCropperResolver, CardCropperService],
     exports: [CardService, CardCropperService],
 })
