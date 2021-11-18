@@ -21,6 +21,7 @@ import { DeckType } from "@deck/models/deck-type.object";
 import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
 import { WinRateData } from "@deck/models/win-rate.model";
+import { WinRate } from "@deck/models/win-rate.object";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -98,7 +99,7 @@ export class DeckService {
         });
     }
 
-    public async getWinRates(count: number): Promise<[string, number][]> {
+    public async getWinRates(count: number) {
         const usageData = (await this.getDeckUsages()).slice(0, count);
         const winningData = await this.getDeckUsages(true);
 
@@ -112,10 +113,21 @@ export class DeckService {
             result.push([item.name, winningItem.count / item.count]);
         }
 
-        return _.chain(result)
+        const data = _.chain(result)
             .orderBy(p => p[1])
             .reverse()
             .value();
+
+        const targetCards = await this.deckTitleCardRepository.find({
+            where: {
+                name: In(data.map(item => item[0])),
+            },
+            relations: ["card"],
+        });
+
+        const targetCardMap = _.chain(targetCards).keyBy("name").mapValues("card").value();
+
+        return data.map<WinRate>(p => ({ rate: p[1], deckName: p[0], titleCard: targetCardMap[p[0]] }));
     }
     public async registerWinRateData(match: Match) {
         const matchResult = await this.matchService.getMatchResultData(match);

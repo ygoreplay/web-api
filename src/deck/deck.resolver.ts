@@ -43,8 +43,7 @@ export class DeckResolver {
 
     @Query(() => [WinRate])
     public async winRate(@Args("count", { type: () => Int, defaultValue: 10 }) count: number) {
-        const winRate = await this.deckService.getWinRates(count);
-        return winRate.map<WinRate>(p => ({ rate: p[1], deckName: p[0] }));
+        return this.deckService.getWinRates(count);
     }
 
     @Mutation(() => [DeckTitleCard])
