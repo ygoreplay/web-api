@@ -254,11 +254,21 @@ export class DeckService {
             .select("`d`.`recognizedName`", "name")
             .addSelect("`d`.`recognizedDeckTags`", "tags")
             .addSelect("COUNT(`d`.`recognizedName`)", "count")
+            .addSelect("`d-t-c`.`cardId`", "cardId")
+            .leftJoin("deck-title-card", "d-t-c", "`d-t-c`.`name` = `d`.`recognizedName`")
             .where("`d`.`createdAt` > :date", { date: date.format("YYYY-MM-DD HH:mm:ss") })
             .groupBy("`d`.`recognizedName`")
             .addGroupBy("`d`.`recognizedDeckTags`")
-            .getRawMany<{ name: string; tags: string; count: string }>()
-            .then(rows => rows.map(row => ({ name: row.name, tags: row.tags.split(",").filter(s => Boolean(s)), count: parseInt(row.count, 10) })));
+            .addGroupBy("`d-t-c`.`cardId`")
+            .getRawMany<{ name: string; tags: string; count: string; cardId: string | null }>()
+            .then(rows =>
+                rows.map(row => ({
+                    name: row.name,
+                    tags: row.tags.split(",").filter(s => Boolean(s)),
+                    count: parseInt(row.count, 10),
+                    cardId: row.cardId ? parseInt(row.cardId, 10) : null,
+                })),
+            );
 
         const items = _.chain(data)
             .keyBy("name")
@@ -275,15 +285,27 @@ export class DeckService {
             }
         }
 
-        return _.chain(items)
+        const result = _.chain(items)
             .values()
             .filter(p => p.tags.length === 0)
             .sortBy(p => p.count)
             .reverse()
             .filter(p => USAGE_BLACKLIST.indexOf(p.name) === -1)
             .slice(0, count)
-            .map(p => ({ deckName: p.name, count: p.count }))
+            .map(p => ({ deckName: p.name, count: p.count, cardId: p.cardId }))
             .value();
+
+        const targetCards = await this.cardService.findByIds(result.map(item => item.cardId));
+        const targetCardMap = _.chain(targetCards).keyBy("id").mapValues().value();
+
+        return result.map(item => {
+            const deckUsage = new DeckUsage();
+            deckUsage.deckName = item.deckName;
+            deckUsage.count = item.count;
+            deckUsage.titleCard = targetCardMap[item.cardId];
+
+            return deckUsage;
+        });
     }
 
     public async getAllTitleCards() {
