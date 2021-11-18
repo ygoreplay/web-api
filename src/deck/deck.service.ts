@@ -346,6 +346,23 @@ export class DeckService {
         });
     }
 
+    public async getUsedCards(deckName: string) {
+        const decks = await this.deckRepository
+            .createQueryBuilder("d")
+            .select("`d`.`recognizedName`", "name")
+            .addSelect("`d`.`main`", "main")
+            .addSelect("`d`.`extra`", "extra")
+            .where("`d`.`recognizedName` = :deckName", { deckName })
+            .skip(0)
+            .take(250)
+            .orderBy("`d`.`id`", "DESC")
+            .getRawMany<{ name: string; main: string; extra: string }>()
+            .then(rows => rows.map(row => ({ cardIds: [...row.main.split(","), ...row.extra.split(",")].map(id => parseInt(id, 10)) })));
+
+        const allCardIds = _.chain(decks).map("cardIds").flatten().uniq().value();
+        return this.cardService.findByIds(allCardIds);
+    }
+
     @Cron("0 */5 * * * *")
     private async pollIdentifierUpdate() {
         const identifierBaseUrl = process.env.IDENTIFIER_URL || "http://localhost:3006";

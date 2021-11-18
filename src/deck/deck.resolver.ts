@@ -16,6 +16,11 @@ import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
 export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
 
+    @Query(() => [Card])
+    public async usedCards(@Args("deckName") deckName: string) {
+        return this.deckService.getUsedCards(deckName);
+    }
+
     @Query(() => Deck, { nullable: true })
     public async deck(@Args("id", { type: () => Int }) id: number) {
         return this.deckService.findById(id);
