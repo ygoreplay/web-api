@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { PlayerModule } from "@player/player.module";
 import { DeckModule } from "@deck/deck.module";
+import { StorageModule } from "@storage/storage.module";
 
 import { RoundResolver } from "@round/round.resolver";
 import { PlayerDeckResolver } from "@round/player-deck.resolver";
@@ -12,7 +13,7 @@ import Round from "@round/models/round.model";
 import PlayerDeck from "@round/models/player-deck.model";
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Round, PlayerDeck]), PlayerModule, DeckModule],
+    imports: [TypeOrmModule.forFeature([Round, PlayerDeck]), PlayerModule, DeckModule, StorageModule],
     providers: [RoundResolver, RoundService, PlayerDeckResolver],
     exports: [RoundService],
 })

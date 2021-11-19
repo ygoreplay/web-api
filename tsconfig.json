@@ -26,6 +26,7 @@
             "@deck/*": ["./src/deck/*"],
             "@player/*": ["./src/player/*"],
             "@match-rule/*": ["./src/match-rule/*"],
+            "@storage/*": ["./src/storage/*"],
             "@root/*": ["./src/*"]
         }
     }

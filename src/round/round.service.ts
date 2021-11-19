@@ -1,31 +1,29 @@
 import * as moment from "moment";
-import * as path from "path";
-import * as fs from "fs-extra";
 import { Repository } from "typeorm";
 
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+
+import { StorageService } from "@storage/storage.service";
 
 import Round from "@round/models/round.model";
 import Deck from "@deck/models/deck.model";
 import Player from "@player/models/player.model";
 import PlayerDeck from "@round/models/player-deck.model";
 
-const REPLAY_STORAGE_PATH = path.join(process.cwd(), "./replays");
+const REPLAY_BUCKET_NAME = process.env.NODE_ENV === "production" ? "replays" : "replays-test";
 
 @Injectable()
-export class RoundService {
-    private static async saveReplayFile(id: number, data: Buffer) {
-        const targetPath = path.join(REPLAY_STORAGE_PATH, `./${id}.yrp`);
-        await fs.promises.writeFile(targetPath, data);
-
-        return targetPath;
-    }
-
+export class RoundService implements OnModuleInit {
     public constructor(
+        @Inject(StorageService) private readonly storageService: StorageService,
         @InjectRepository(Round) private readonly roundRepository: Repository<Round>,
         @InjectRepository(PlayerDeck) private readonly playerDeckRepository: Repository<PlayerDeck>,
     ) {}
+
+    public async onModuleInit() {
+        await this.storageService.ensureBucket(REPLAY_BUCKET_NAME);
+    }
 
     public async findByIds(ids: Round["id"][]) {
         return this.roundRepository.findByIds(ids);
@@ -54,7 +52,7 @@ export class RoundService {
         round.winner = winnerPlayer;
         round = await this.roundRepository.save(round);
 
-        round.replayFilePath = await RoundService.saveReplayFile(round.id, replayData);
+        round.replayFilePath = await this.saveReplayFile(round.id, replayData);
         return this.roundRepository.save(round);
     }
 
@@ -65,4 +63,9 @@ export class RoundService {
 
         return pd;
     };
+
+    private async saveReplayFile(id: number, data: Buffer) {
+        const uploaded = await this.storageService.upload(data, `${id}.yrp`, REPLAY_BUCKET_NAME);
+        return uploaded.Key;
+    }
 }
