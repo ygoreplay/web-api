@@ -99,14 +99,12 @@ export class CardUpdateProcessor {
             return;
         }
 
-        if (process.env.NODE_ENV === "production") {
-            const commits = await this.octokit.repos.listCommits({
-                owner: "mycard",
-                repo: "ygopro-database",
-            });
+        const commits = await this.octokit.repos.listCommits({
+            owner: "mycard",
+            repo: "ygopro-database",
+        });
 
-            await fs.writeFile(".db-last-commit", commits.data[0].sha);
-        }
+        await fs.writeFile(".db-last-commit", commits.data[0].sha);
 
         let cdbFilePath: string | null = null;
         if (!databaseExistsButNotInstalled) {
