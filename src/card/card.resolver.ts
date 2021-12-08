@@ -1,4 +1,4 @@
-import { Inject } from "@nestjs/common";
+import { forwardRef, Inject } from "@nestjs/common";
 import { Resolver, Query, Args, Int, ResolveField, registerEnumType, Root, Subscription, Context } from "@nestjs/graphql";
 
 import { CardService } from "@card/card.service";
@@ -16,7 +16,6 @@ enum CardType {
     Spell = "Spell",
     Trap = "Trap",
 }
-
 enum MonsterCardType {
     Normal = "normal",
     Effect = "effect",
@@ -27,14 +26,24 @@ enum MonsterCardType {
     Pendulum = "pendulum",
     Link = "link",
 }
+export enum TrapSpellCardType {
+    Normal = "normal",
+    Continuous = "continuous",
+    Equip = "equip",
+    Field = "field",
+    Counter = "counter",
+    Ritual = "ritual",
+    QuickPlay = "quick-play",
+}
 
+registerEnumType(TrapSpellCardType, { name: "TrapSpellCardType" });
 registerEnumType(CardType, { name: "CardType" });
 registerEnumType(MonsterCardType, { name: "MonsterCardType" });
 
 @Resolver(() => Card)
 export class CardResolver {
     public constructor(
-        @Inject(CardService) private readonly cardService: CardService,
+        @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
         @Inject(CardCropperService) private readonly cardCropperService: CardCropperService,
     ) {}
 
@@ -100,7 +109,7 @@ export class CardResolver {
     }
 
     @ResolveField(() => CardType)
-    public async type(@Root() card: Card) {
+    public type(@Root() card: Card) {
         if (card.isMonster) {
             return CardType.Monster;
         }
@@ -112,6 +121,48 @@ export class CardResolver {
         return CardType.Spell;
     }
 
+    @ResolveField(() => TrapSpellCardType)
+    public trapSpellType(@Root() card: Card) {
+        switch (this.type(card)) {
+            case CardType.Monster:
+                return TrapSpellCardType.Normal;
+
+            case CardType.Trap:
+                if (card.isContinuous) {
+                    return TrapSpellCardType.Continuous;
+                }
+
+                if (card.isCounter) {
+                    return TrapSpellCardType.Counter;
+                }
+
+                return TrapSpellCardType.Normal;
+
+            case CardType.Spell:
+                if (card.isContinuous) {
+                    return TrapSpellCardType.Continuous;
+                }
+
+                if (card.isEquip) {
+                    return TrapSpellCardType.Equip;
+                }
+
+                if (card.isField) {
+                    return TrapSpellCardType.Field;
+                }
+
+                if (card.isQuickPlay) {
+                    return TrapSpellCardType.QuickPlay;
+                }
+
+                if (card.isRitual) {
+                    return TrapSpellCardType.Ritual;
+                }
+
+                return TrapSpellCardType.Normal;
+        }
+    }
+
     @ResolveField(() => Boolean)
     public async hasCropperItem(@Root() card: Card, @Context() context: GraphQLContext) {
         return context.cardCropperItemCheckerLoader.load(card.id);
@@ -120,5 +171,15 @@ export class CardResolver {
     @ResolveField(() => CardCropperItem, { nullable: true })
     public async cropperItem(@Root() card: Card) {
         return this.cardCropperService.findByCardId(card.id);
+    }
+
+    @ResolveField(() => Int)
+    public async level(@Root() card: Card) {
+        return card.level & 0xff;
+    }
+
+    @ResolveField(() => Boolean)
+    public async isExtra(@Root() card: Card) {
+        return card.isExtraCard;
     }
 }

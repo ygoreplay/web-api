@@ -1,8 +1,50 @@
 import { BaseEntity, Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryColumn, RelationId } from "typeorm";
-import { Field, Int, ObjectType } from "@nestjs/graphql";
+import { Field, Int, ObjectType, registerEnumType } from "@nestjs/graphql";
 
 import { Text } from "@card/models/Text.model";
 import { DeckTitleCard } from "@deck/models/deck-title-card.model";
+
+export enum CardAttribute {
+    None = 0,
+    Earth = 1,
+    Water = 2,
+    Fire = 4,
+    Wind = 8,
+    Light = 16,
+    Dark = 32,
+    Divine = 64,
+}
+export enum CardRace {
+    None = 0,
+    Warrior = 1,
+    SpellCaster = 2,
+    Fairy = 4,
+    Fiend = 8,
+    Zombie = 16,
+    Machine = 32,
+    Aqua = 64,
+    Pyro = 128,
+    Rock = 256,
+    WindBeast = 512,
+    Plant = 1024,
+    Insect = 2048,
+    Thunder = 4096,
+    Dragon = 8192,
+    Beast = 16384,
+    BeastWarrior = 32768,
+    Dinosaur = 65536,
+    Fish = 131072,
+    SeaSerpent = 262144,
+    Reptile = 524288,
+    Psycho = 1048576,
+    Divine = 2097152,
+    CreatorGod = 4194304,
+    Wyrm = 8388608,
+    Cybers = 16777216,
+}
+
+registerEnumType(CardAttribute, { name: "CardAttribute" });
+registerEnumType(CardRace, { name: "CardRace" });
 
 @ObjectType()
 @Entity({ name: "cards" })
@@ -13,6 +55,22 @@ export class Card extends BaseEntity {
     public get isTrap() {
         return Boolean(this.type & 0x4);
     }
+    public get isContinuous() {
+        return Boolean(this.type & 0x20000);
+    }
+    public get isEquip() {
+        return Boolean(this.type & 0x40000);
+    }
+    public get isField() {
+        return Boolean(this.type & 0x80000);
+    }
+    public get isCounter() {
+        return Boolean(this.type & 0x100000);
+    }
+    public get isQuickPlay() {
+        return Boolean(this.type & 0x10000);
+    }
+
     public get isMonster() {
         return Boolean(this.type & 0x1);
     }
@@ -69,13 +127,13 @@ export class Card extends BaseEntity {
     @Column({ type: "int" })
     public level!: number;
 
-    @Field(() => Int)
+    @Field(() => CardRace)
     @Column({ type: "int" })
-    public race!: number;
+    public race!: CardRace;
 
-    @Field(() => Int)
+    @Field(() => CardAttribute)
     @Column({ type: "int" })
-    public attribute!: number;
+    public attribute!: CardAttribute;
 
     @Field(() => Int)
     @Column({ type: "bigint" })
