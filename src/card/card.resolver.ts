@@ -182,4 +182,9 @@ export class CardResolver {
     public async isExtra(@Root() card: Card) {
         return card.isExtraCard;
     }
+
+    @ResolveField(() => Int)
+    public rawType(@Root() card: Card) {
+        return card.type;
+    }
 }
