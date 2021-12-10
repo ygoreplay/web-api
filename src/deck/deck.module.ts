@@ -11,6 +11,7 @@ import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 
 import { CardModule } from "@card/card.module";
 import { MatchModule } from "@match/match.module";
+import { StorageModule } from "@storage/storage.module";
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import { MatchModule } from "@match/match.module";
         TypeOrmModule.forFeature([Deck, WinRateData, DeckTitleCard]),
         forwardRef(() => CardModule),
         forwardRef(() => MatchModule),
+        forwardRef(() => StorageModule),
     ],
     providers: [DeckResolver, DeckService, WinRateProcessor],
     exports: [DeckService],

@@ -42,6 +42,20 @@ export class StorageService {
             .promise();
     }
 
+    public async download(filePath: string, bucketName: string) {
+        const object = await this.s3
+            .getObject({
+                Bucket: `ygoreplay-${bucketName}`,
+                Key: filePath,
+            })
+            .promise();
+
+        if (!object || !object.Body) {
+            throw new Error(`Failed to download static file: ${filePath} (${bucketName})`);
+        }
+
+        return object.Body;
+    }
     public async upload(buffer: Buffer, filePath: string, bucketName: string) {
         const writeStream = new stream.PassThrough();
         const uploadPromise = this.s3

@@ -38,6 +38,7 @@
     "apollo-server-express": "^3.3.0",
     "aws-sdk": "^2.1032.0",
     "bull": "^4.1.0",
+    "canvas": "^2.8.0",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
     "dataloader": "^2.0.0",
@@ -57,7 +58,8 @@
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "sqlite3": "^5.0.2",
-    "typeorm": "^0.2.38"
+    "typeorm": "^0.2.38",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@nestjs/cli": "^8.0.0",
@@ -74,6 +76,7 @@
     "@types/node-fetch": "^2.5.12",
     "@types/progress-stream": "^2.0.2",
     "@types/supertest": "^2.0.11",
+    "@types/uuid": "^8.3.3",
     "@typescript-eslint/eslint-plugin": "^4.28.2",
     "@typescript-eslint/parser": "^4.28.2",
     "eslint": "^7.30.0",

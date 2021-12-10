@@ -51,6 +51,15 @@ export class DeckResolver {
         return this.deckService.registerDeckTitleCards(input);
     }
 
+    @Mutation(() => String)
+    public async generateDeckRecipeImage(
+        @Args("mainDeck", { type: () => [Int] }) mainDeck: number[],
+        @Args("extraDeck", { type: () => [Int] }) extraDeck: number[],
+        @Args("sideDeck", { type: () => [Int] }) sideDeck: number[],
+    ) {
+        return this.deckService.generateDeckRecipeImage(mainDeck, extraDeck, sideDeck);
+    }
+
     @ResolveField(() => [Card])
     public async main(@Root() deck: Deck) {
         return this.cardService.findByIds(deck.mainIds);

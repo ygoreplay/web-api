@@ -3,12 +3,15 @@ import * as _ from "lodash";
 import { In, Repository } from "typeorm";
 import fetch from "node-fetch";
 import * as FormData from "form-data";
-import { Cron } from "@nestjs/schedule";
+import { createCanvas, Image, loadImage } from "canvas";
+import { v4 as generateUUID } from "uuid";
 
+import { Cron } from "@nestjs/schedule";
 import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { CardService } from "@card/card.service";
+import { StorageService } from "@storage/storage.service";
 
 import { MatchResultData, MatchService } from "@match/match.service";
 import Match from "@match/models/match.model";
@@ -52,6 +55,7 @@ export class DeckService {
         @InjectRepository(DeckTitleCard) private readonly deckTitleCardRepository: Repository<DeckTitleCard>,
         @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
         @Inject(forwardRef(() => MatchService)) private readonly matchService: MatchService,
+        @Inject(forwardRef(() => StorageService)) private readonly storageService: StorageService,
     ) {}
 
     public async create(main: number[], side: number[]) {
@@ -396,6 +400,79 @@ export class DeckService {
 
         const allCardIds = _.chain(decks).map("cardIds").flatten().uniq().value();
         return this.cardService.findByIds(allCardIds);
+    }
+
+    public async generateDeckRecipeImage(mainDeck: number[], extraDeck: number[], sideDeck: number[]) {
+        const deckImageFrame = await this.storageService.download("deck-image-frame-title.png", "static");
+        const deckImageCopyright = await this.storageService.download("deck-image-copyright.png", "static");
+        if (!Buffer.isBuffer(deckImageFrame) || !Buffer.isBuffer(deckImageCopyright)) {
+            throw new Error("Failed to download deck image frame!");
+        }
+
+        const frameTitleImage = await loadImage(deckImageFrame);
+        const frameCopyrightImage = await loadImage(deckImageCopyright);
+        const cardIds = _.chain(mainDeck).concat(extraDeck).concat(sideDeck).uniq().value();
+        const cardImages = await Promise.all(cardIds.map(cardId => this.storageService.download(`card-image/${cardId}.jpg`, "static")));
+        const cardImageMap: { [cardId: string]: Image } = {};
+        for (let i = 0; i < cardIds.length; i++) {
+            const cardId = cardIds[i];
+            const cardImage = cardImages[i];
+            if (!Buffer.isBuffer(cardImage)) {
+                continue;
+            }
+
+            cardImageMap[cardId] = await loadImage(cardImage);
+        }
+
+        const desiredHeight =
+            82 + // Header
+            56 * 3 + // Titles
+            180 * Math.ceil(mainDeck.length / 10) + // Main
+            180 * Math.ceil(extraDeck.length / 10) + // Extra
+            180 * Math.ceil(sideDeck.length / 10) + // Side
+            frameCopyrightImage.height; // Copyright
+        const canvas = createCanvas(frameTitleImage.width, desiredHeight);
+
+        const context = canvas.getContext("2d");
+        let currentY = 0;
+        const renderCards = (cardList: number[], startY: number) => {
+            for (let i = 0; i < cardList.length; i++) {
+                const cardId = cardList[i];
+                context.drawImage(cardImageMap[cardId], (i % 10) * 124, startY + Math.floor(i / 10) * 180, 124, 180);
+            }
+
+            currentY += 180 * Math.ceil(cardList.length / 10);
+        };
+
+        context.fillStyle = "#000000";
+        context.fillRect(0, 0, frameTitleImage.width, desiredHeight);
+
+        context.fillStyle = "#012233";
+        context.fillRect(0, 0, frameTitleImage.width, (currentY += 82));
+
+        context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
+        currentY += frameTitleImage.height;
+        renderCards(mainDeck, currentY);
+
+        context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
+        currentY += frameTitleImage.height;
+        renderCards(extraDeck, currentY);
+
+        context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
+        currentY += frameTitleImage.height;
+        renderCards(sideDeck, currentY);
+
+        context.drawImage(frameCopyrightImage, 0, currentY, frameCopyrightImage.width, frameCopyrightImage.height);
+
+        const deckImageBuffer = canvas.toBuffer("image/png", {
+            compressionLevel: 9,
+        });
+        const uuid = generateUUID();
+
+        await this.storageService.ensureBucket("deck-images");
+        const object = await this.storageService.upload(deckImageBuffer, `${uuid}.png`, "deck-images");
+
+        return object.Location;
     }
 
     @Cron("0 */5 * * * *")
