@@ -427,21 +427,21 @@ export class DeckService {
         const desiredHeight =
             82 + // Header
             56 * 3 + // Titles
-            180 * Math.ceil(mainDeck.length / 10) + // Main
-            180 * Math.ceil(extraDeck.length / 10) + // Extra
-            180 * Math.ceil(sideDeck.length / 10) + // Side
+            180 * Math.max(4, Math.ceil(mainDeck.length / 10)) + // Main
+            180 * Math.max(2, Math.ceil(extraDeck.length / 10)) + // Extra
+            180 * Math.max(2, Math.ceil(sideDeck.length / 10)) + // Side
             frameCopyrightImage.height; // Copyright
         const canvas = createCanvas(frameTitleImage.width, desiredHeight);
 
         const context = canvas.getContext("2d");
         let currentY = 0;
-        const renderCards = (cardList: number[], startY: number) => {
+        const renderCards = (cardList: number[], startY: number, minRows: number) => {
             for (let i = 0; i < cardList.length; i++) {
                 const cardId = cardList[i];
                 context.drawImage(cardImageMap[cardId], (i % 10) * 124, startY + Math.floor(i / 10) * 180, 124, 180);
             }
 
-            currentY += 180 * Math.ceil(cardList.length / 10);
+            currentY += 180 * Math.max(minRows, Math.ceil(cardList.length / 10));
         };
 
         context.fillStyle = "#000000";
@@ -452,15 +452,15 @@ export class DeckService {
 
         context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
         currentY += frameTitleImage.height;
-        renderCards(mainDeck, currentY);
+        renderCards(mainDeck, currentY, 4);
 
         context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
         currentY += frameTitleImage.height;
-        renderCards(extraDeck, currentY);
+        renderCards(extraDeck, currentY, 2);
 
         context.drawImage(frameTitleImage, 0, currentY, frameTitleImage.width, frameTitleImage.height);
         currentY += frameTitleImage.height;
-        renderCards(sideDeck, currentY);
+        renderCards(sideDeck, currentY, 2);
 
         context.drawImage(frameCopyrightImage, 0, currentY, frameCopyrightImage.width, frameCopyrightImage.height);
 
