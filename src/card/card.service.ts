@@ -1,4 +1,6 @@
 import * as _ from "lodash";
+import * as fs from "fs-extra";
+import * as path from "path";
 import { In, Like, Not, Repository } from "typeorm";
 import { Queue } from "bull";
 
@@ -13,11 +15,15 @@ import { Text } from "@card/models/Text.model";
 import { CardUsage } from "@card/models/card-usage.object";
 import { CardSuggestion } from "@card/models/card-suggestion.object";
 
+import { downloadFileFromUrl } from "@utils/net";
+
 import { pubSub } from "@root/pubsub";
 import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class CardService implements OnModuleInit {
+    private banLists: { [key: string]: [number, number][] } = {};
+
     public constructor(
         @Inject(forwardRef(() => DeckService)) private readonly deckService: DeckService,
         @InjectQueue("card-update") private readonly cardUpdateQueue: Queue,
@@ -27,6 +33,44 @@ export class CardService implements OnModuleInit {
 
     public async onModuleInit() {
         await this.cardUpdateQueue.add("update");
+
+        const banListFilePath = path.join(process.cwd(), "lflist.conf");
+        await downloadFileFromUrl("https://raw.githubusercontent.com/Fluorohydride/ygopro/master/lflist.conf", banListFilePath);
+
+        const fileContent = await fs.readFile(banListFilePath).then(buffer => buffer.toString());
+        const lines = fileContent.replace(/\r\n/g, "\n").split("\n");
+        const banListTitle = lines[0];
+        const banListItems = banListTitle
+            .replace(/[#\[]/g, "")
+            .split("]")
+            .filter(item => Boolean(item));
+        for (const banListItem of banListItems) {
+            this.banLists[banListItem] = [];
+        }
+
+        let currentBanListTitle = "";
+        for (const line of lines) {
+            if (line.startsWith("!")) {
+                currentBanListTitle = line.trim().replace("!", "");
+                continue;
+            }
+
+            if (line.startsWith("#")) {
+                continue;
+            }
+
+            if (!/^[0-9]/.test(line)) {
+                continue;
+            }
+
+            const [content] = line.split("--");
+            const [cardId, maxCardCount] = content
+                .trim()
+                .split(" ")
+                .map(token => parseInt(token, 10));
+
+            this.banLists[currentBanListTitle].push([cardId, maxCardCount]);
+        }
     }
     public async count() {
         return this.cardRepository.count();
@@ -133,5 +177,14 @@ export class CardService implements OnModuleInit {
     @Cron("0 0 * * * *")
     public async doUpdate() {
         await this.cardUpdateQueue.add("update");
+    }
+
+    public getAvailableBanLists() {
+        return _.chain(this.banLists)
+            .keys()
+            .orderBy(title => parseInt(title.split(".")[1]))
+            .orderBy(title => parseInt(title.split(".")[0]))
+            .reverse()
+            .value();
     }
 }

@@ -37,3 +37,4 @@ lerna-debug.log*
 /replays
 .db-last-commit
 cards.cdb
+/lflist.conf

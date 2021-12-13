@@ -27,6 +27,7 @@
             "@player/*": ["./src/player/*"],
             "@match-rule/*": ["./src/match-rule/*"],
             "@storage/*": ["./src/storage/*"],
+            "@utils/*": ["./src/utils/*"],
             "@root/*": ["./src/*"]
         }
     }

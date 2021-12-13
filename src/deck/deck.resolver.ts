@@ -9,8 +9,10 @@ import Deck from "@deck/models/deck.model";
 import { WinRate } from "@deck/models/win-rate.object";
 import { DeckUsage } from "@deck/models/deck-usage.object";
 import { DeckType } from "@deck/models/deck-type.object";
-import { DeckTitleCard } from "./models/deck-title-card.model";
+import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
+import { CreateChampionshipArgs } from "@deck/models/create-championship-args.input";
+import { CreateChampionshipResult } from "@deck/models/create-championship-result.object";
 
 @Resolver(() => Deck)
 export class DeckResolver {
@@ -58,6 +60,11 @@ export class DeckResolver {
         @Args("sideDeck", { type: () => [Int] }) sideDeck: number[],
     ) {
         return this.deckService.generateDeckRecipeImage(mainDeck, extraDeck, sideDeck);
+    }
+
+    @Mutation(() => CreateChampionshipResult)
+    public async createChampionship(@Args("data", { type: () => CreateChampionshipArgs }) data: CreateChampionshipArgs) {
+        return this.deckService.createChampionship(data);
     }
 
     @ResolveField(() => [Card])

@@ -5,6 +5,7 @@ import fetch from "node-fetch";
 import * as FormData from "form-data";
 import { createCanvas, Image, loadImage } from "canvas";
 import { v4 as generateUUID } from "uuid";
+import { nanoid } from "nanoid";
 
 import { Cron } from "@nestjs/schedule";
 import { forwardRef, Inject, Injectable, Logger } from "@nestjs/common";
@@ -25,6 +26,9 @@ import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
 import { WinRateData } from "@deck/models/win-rate.model";
 import { WinRate } from "@deck/models/win-rate.object";
+import { CreateChampionshipArgs } from "@deck/models/create-championship-args.input";
+import { Championship } from "@deck/models/championship.model";
+import { CreateChampionshipResult } from "@deck/models/create-championship-result.object";
 
 const PREDEFINED_DECK_TAGS = Object.entries({
     사이버류: ["사이버드래곤", "사이버다크"],
@@ -53,6 +57,7 @@ export class DeckService {
         @InjectRepository(Deck) private readonly deckRepository: Repository<Deck>,
         @InjectRepository(WinRateData) private readonly winRateDataRepository: Repository<WinRateData>,
         @InjectRepository(DeckTitleCard) private readonly deckTitleCardRepository: Repository<DeckTitleCard>,
+        @InjectRepository(Championship) private readonly championshipRepository: Repository<Championship>,
         @Inject(forwardRef(() => CardService)) private readonly cardService: CardService,
         @Inject(forwardRef(() => MatchService)) private readonly matchService: MatchService,
         @Inject(forwardRef(() => StorageService)) private readonly storageService: StorageService,
@@ -473,6 +478,23 @@ export class DeckService {
         const object = await this.storageService.upload(deckImageBuffer, `${uuid}.png`, "deck-images");
 
         return object.Location;
+    }
+
+    public async createChampionship(data: CreateChampionshipArgs): Promise<CreateChampionshipResult> {
+        let championship = this.championshipRepository.create();
+        championship.name = data.title;
+        championship.banList = data.banList;
+        championship.shareBanLists = data.shareBanLists;
+        championship.shareCardCount = data.shareCardCount;
+        championship.monitorUrlCode = nanoid(16);
+        championship.joinUrlCode = nanoid(16);
+        championship = await this.championshipRepository.save(championship);
+
+        const result: CreateChampionshipResult = new CreateChampionshipResult();
+        result.joinUrl = championship.joinUrlCode;
+        result.monitorUrl = championship.monitorUrlCode;
+
+        return result;
     }
 
     @Cron("0 */5 * * * *")

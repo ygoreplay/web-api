@@ -47,6 +47,11 @@ export class CardResolver {
         @Inject(CardCropperService) private readonly cardCropperService: CardCropperService,
     ) {}
 
+    @Query(() => [String])
+    public async availableBanLists(): Promise<string[]> {
+        return this.cardService.getAvailableBanLists();
+    }
+
     @Query(() => [CardSuggestion])
     public async cardSuggestions(@Args("query", { type: () => String }) query: string, @Args("count", { type: () => Int }) count: number) {
         return this.cardService.suggestCards(query, count);
