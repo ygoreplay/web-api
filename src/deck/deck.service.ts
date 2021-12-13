@@ -488,6 +488,7 @@ export class DeckService {
         championship.shareCardCount = data.shareCardCount;
         championship.monitorUrlCode = nanoid(16);
         championship.joinUrlCode = nanoid(16);
+        championship.type = data.type;
         championship = await this.championshipRepository.save(championship);
 
         const result: CreateChampionshipResult = new CreateChampionshipResult();
@@ -495,6 +496,18 @@ export class DeckService {
         result.monitorUrl = championship.monitorUrlCode;
 
         return result;
+    }
+    public async findChampionship(id: string) {
+        return await this.championshipRepository.findOne({
+            where: [
+                {
+                    joinUrlCode: id,
+                },
+                {
+                    monitorUrlCode: id,
+                },
+            ],
+        });
     }
 
     @Cron("0 */5 * * * *")

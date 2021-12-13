@@ -1,6 +1,8 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 
+import { ChampionshipType } from "@deck/models/create-championship-args.input";
+
 @Entity()
 @ObjectType()
 export class Championship {
@@ -11,6 +13,10 @@ export class Championship {
     @Field(() => String)
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
     public name!: string;
+
+    @Field(() => ChampionshipType)
+    @Column({ type: "varchar", length: 255 })
+    public type!: ChampionshipType;
 
     @Field(() => String)
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
