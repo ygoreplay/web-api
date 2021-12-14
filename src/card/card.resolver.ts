@@ -10,6 +10,7 @@ import { CardSuggestion } from "@card/models/card-suggestion.object";
 import { pubSub } from "@root/pubsub";
 import { GraphQLContext } from "@root/types";
 import { CardCropperItem } from "@card/models/card-cropper-item.model";
+import { BanListDeclaration } from "@card/models/banlist-declaration.object";
 
 enum CardType {
     Monster = "monster",
@@ -50,6 +51,11 @@ export class CardResolver {
     @Query(() => [String])
     public async availableBanLists(): Promise<string[]> {
         return this.cardService.getAvailableBanLists();
+    }
+
+    @Query(() => BanListDeclaration)
+    public async banList(@Args("title", { type: () => String }) title: string) {
+        return this.cardService.getBanList(title);
     }
 
     @Query(() => [CardSuggestion])

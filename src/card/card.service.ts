@@ -14,6 +14,7 @@ import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
 import { CardUsage } from "@card/models/card-usage.object";
 import { CardSuggestion } from "@card/models/card-suggestion.object";
+import { BanListDeclaration } from "@card/models/banlist-declaration.object";
 
 import { downloadFileFromUrl } from "@utils/net";
 
@@ -22,7 +23,7 @@ import { Cron } from "@nestjs/schedule";
 
 @Injectable()
 export class CardService implements OnModuleInit {
-    private banLists: { [key: string]: [number, number][] } = {};
+    private banLists: { [key: string]: BanListDeclaration } = {};
 
     public constructor(
         @Inject(forwardRef(() => DeckService)) private readonly deckService: DeckService,
@@ -45,7 +46,7 @@ export class CardService implements OnModuleInit {
             .split("]")
             .filter(item => Boolean(item));
         for (const banListItem of banListItems) {
-            this.banLists[banListItem] = [];
+            this.banLists[banListItem] = new BanListDeclaration();
         }
 
         let currentBanListTitle = "";
@@ -69,7 +70,31 @@ export class CardService implements OnModuleInit {
                 .split(" ")
                 .map(token => parseInt(token, 10));
 
-            this.banLists[currentBanListTitle].push([cardId, maxCardCount]);
+            switch (maxCardCount) {
+                case 0:
+                    if (!this.banLists[currentBanListTitle].forbidden) {
+                        this.banLists[currentBanListTitle].forbidden = [];
+                    }
+
+                    this.banLists[currentBanListTitle].forbidden.push(cardId);
+                    break;
+
+                case 1:
+                    if (!this.banLists[currentBanListTitle].limit) {
+                        this.banLists[currentBanListTitle].limit = [];
+                    }
+
+                    this.banLists[currentBanListTitle].limit.push(cardId);
+                    break;
+
+                case 2:
+                    if (!this.banLists[currentBanListTitle].semiLimit) {
+                        this.banLists[currentBanListTitle].semiLimit = [];
+                    }
+
+                    this.banLists[currentBanListTitle].semiLimit.push(cardId);
+                    break;
+            }
         }
     }
     public async count() {
@@ -186,5 +211,12 @@ export class CardService implements OnModuleInit {
             .orderBy(title => parseInt(title.split(".")[0]))
             .reverse()
             .value();
+    }
+    public getBanList(title: string) {
+        if (!(title in this.banLists)) {
+            throw new Error(`Given banlist with title \`${title}\` doesn't exist.`);
+        }
+
+        return this.banLists[title];
     }
 }
