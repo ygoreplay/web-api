@@ -1,6 +1,8 @@
+import * as _ from "lodash";
 import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
 import { YGOProCard } from "@card/models/Card.sqlite";
+import { BanListDeclaration } from "@card/models/banlist-declaration.object";
 
 export function isCardUpdated(currentCard: Card, newCard: YGOProCard) {
     return !(
@@ -92,4 +94,25 @@ export function isEntityUpdated(current: Text | Card, _new: Text | YGOProCard) {
     } else if ("atk" in current && "atk" in _new) {
         return isCardUpdated(current, _new);
     }
+}
+
+export function convertBanListDeclarationToMap(banListDeclaration: BanListDeclaration): { [key: number]: number | null } {
+    const result: [number, 0 | 1 | 2][] = [];
+
+    banListDeclaration.semiLimit.forEach(id => {
+        result.push([id, 2]);
+    });
+
+    banListDeclaration.limit.forEach(id => {
+        result.push([id, 1]);
+    });
+
+    banListDeclaration.forbidden.forEach(id => {
+        result.push([id, 0]);
+    });
+
+    return _.chain(result)
+        .keyBy(p => p[0])
+        .mapValues(p => p[1])
+        .value();
 }

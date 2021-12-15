@@ -15,6 +15,7 @@ import { DeckModule } from "@deck/deck.module";
 import { PlayerModule } from "@player/player.module";
 import { MatchRuleModule } from "@match-rule/match-rule.module";
 import { StorageModule } from "@storage/storage.module";
+import { ChampionshipModule } from "@championship/championship.module";
 
 import { CardModule } from "@card/card.module";
 import { CardService } from "@card/card.service";
@@ -65,6 +66,7 @@ delete (config as any).entities;
         MatchRuleModule,
         CardModule,
         StorageModule,
+        ChampionshipModule,
     ],
     controllers: [],
     providers: [],

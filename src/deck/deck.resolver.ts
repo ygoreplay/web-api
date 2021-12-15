@@ -11,18 +11,10 @@ import { DeckUsage } from "@deck/models/deck-usage.object";
 import { DeckType } from "@deck/models/deck-type.object";
 import { DeckTitleCard } from "@deck/models/deck-title-card.model";
 import { DeckTitleCardInput } from "@deck/models/deck-title-card.input";
-import { CreateChampionshipArgs } from "@deck/models/create-championship-args.input";
-import { CreateChampionshipResult } from "@deck/models/create-championship-result.object";
-import { Championship } from "@deck/models/championship.model";
 
 @Resolver(() => Deck)
 export class DeckResolver {
     public constructor(@Inject(CardService) private readonly cardService: CardService, @Inject(DeckService) private readonly deckService: DeckService) {}
-
-    @Query(() => Championship, { nullable: true })
-    public async championship(@Args("id", { type: () => String }) id: string) {
-        return this.deckService.findChampionship(id);
-    }
 
     @Query(() => [Card])
     public async usedCards(@Args("deckName") deckName: string) {
@@ -66,11 +58,6 @@ export class DeckResolver {
         @Args("sideDeck", { type: () => [Int] }) sideDeck: number[],
     ) {
         return this.deckService.generateDeckRecipeImage(mainDeck, extraDeck, sideDeck);
-    }
-
-    @Mutation(() => CreateChampionshipResult)
-    public async createChampionship(@Args("data", { type: () => CreateChampionshipArgs }) data: CreateChampionshipArgs) {
-        return this.deckService.createChampionship(data);
     }
 
     @ResolveField(() => [Card])

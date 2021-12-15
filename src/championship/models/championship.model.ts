@@ -1,7 +1,8 @@
-import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, RelationId, UpdateDateColumn } from "typeorm";
 import { Field, Int, ObjectType } from "@nestjs/graphql";
 
-import { ChampionshipType } from "@deck/models/create-championship-args.input";
+import { ChampionshipType } from "@championship/models/create-championship-args.input";
+import { ChampionshipParticipant } from "@championship/models/championship-participant.model";
 
 @Entity()
 @ObjectType()
@@ -45,4 +46,13 @@ export class Championship {
     @Field(() => Date)
     @UpdateDateColumn()
     public updatedAt: Date;
+
+    //
+    // Relation (One-to-Many) - ChampionshipParticipant => Championship
+    //
+    @OneToMany(() => ChampionshipParticipant, participant => participant.championship)
+    public participants!: ChampionshipParticipant[];
+
+    @RelationId((entity: Championship) => entity.participants)
+    public participantIds!: ChampionshipParticipant["id"][];
 }
