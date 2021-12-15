@@ -22,10 +22,11 @@ export class ChampionshipResolver {
 
     @Mutation(() => ExecutionResult)
     public async submitChampionshipParticipants(
+        @Args("teamName", { type: () => String, nullable: true }) teamName: string | null,
         @Args("championshipId", { type: () => Int }) championshipId: number,
         @Args("participants", { type: () => [SubmitParticipantsArgsInput] }) participants: SubmitParticipantsArgsInput[],
     ) {
-        return this.championshipService.submitChampionshipParticipants(championshipId, participants);
+        return this.championshipService.submitChampionshipParticipants(championshipId, participants, teamName);
     }
 
     @Mutation(() => CreateChampionshipResult)

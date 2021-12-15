@@ -69,9 +69,20 @@ export class ChampionshipService {
         return this.championshipParticipantRepository.findByIds(participantIds);
     }
 
-    public async submitChampionshipParticipants(championshipId: number, participantInputs: SubmitParticipantsArgsInput[]): Promise<ExecutionResult> {
-        const cards = await this.cardService.findAll();
+    public async submitChampionshipParticipants(
+        championshipId: number,
+        participantInputs: SubmitParticipantsArgsInput[],
+        teamName: string | null,
+    ): Promise<ExecutionResult> {
         const championship = await this.findChampionshipById(championshipId);
+        if (!teamName && championship.type === ChampionshipType.Team) {
+            return {
+                errors: ["팀 이름 정보가 누락 되었습니다."],
+                succeeded: false,
+            };
+        }
+
+        const cards = await this.cardService.findAll();
         const participantDecks: ParticipantDeck[] = [];
         const errors: string[] = [];
         for (const p of participantInputs) {
@@ -157,6 +168,10 @@ export class ChampionshipService {
             participant.main = p.deck.main;
             participant.extra = p.deck.extra;
             participant.side = p.deck.side;
+
+            if (championship.type === ChampionshipType.Team && teamName) {
+                participant.teamName = teamName;
+            }
 
             result.push(participant);
         }

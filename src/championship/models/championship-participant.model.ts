@@ -12,6 +12,10 @@ export class ChampionshipParticipant {
     public id: number;
 
     @Field(() => String)
+    @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", nullable: true })
+    public teamName!: string;
+
+    @Field(() => String)
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci" })
     public name!: string;
 
