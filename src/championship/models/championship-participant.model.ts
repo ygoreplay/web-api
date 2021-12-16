@@ -11,7 +11,7 @@ export class ChampionshipParticipant {
     @PrimaryGeneratedColumn({ type: "int" })
     public id: number;
 
-    @Field(() => String)
+    @Field(() => String, { nullable: true })
     @Column({ type: "text", charset: "utf8mb4", collation: "utf8mb4_unicode_ci", nullable: true })
     public teamName!: string;
 

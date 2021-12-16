@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { Repository } from "typeorm";
+import * as _ from "lodash";
 
 import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -18,7 +19,6 @@ import { readStreamIntoBuffer } from "@utils/readStreamIntoBuffer";
 import { parseDeckFileContent } from "@utils/parseDeckFileContent";
 import { ParticipantDeck } from "@utils/types";
 import { convertBanListDeclarationToMap } from "@utils/cards";
-import * as _ from "lodash";
 import { getAllCardsFromRawDecks } from "@utils/decks";
 
 @Injectable()
@@ -80,6 +80,7 @@ export class ChampionshipService {
                 errors: ["팀 이름 정보가 누락 되었습니다."],
                 succeeded: false,
             };
+        } else if (teamName && championship.type === ChampionshipType.Team) {
         }
 
         const cards = await this.cardService.findAll();
@@ -177,6 +178,61 @@ export class ChampionshipService {
         }
 
         await this.championshipParticipantRepository.save(result);
+
+        return {
+            errors: [],
+            succeeded: true,
+        };
+    }
+
+    public async getParticipantCount(championship: Championship) {
+        const countResult = await this.championshipParticipantRepository
+            .createQueryBuilder("cp")
+            .select("COUNT(`cp`.`id`)", "count")
+            .where("`cp`.`championshipId` = :id", { id: championship.id })
+            .getRawOne<{ count: string }>();
+
+        if (!countResult) {
+            return 0;
+        }
+
+        return parseInt(countResult.count, 10);
+    }
+
+    public async deleteParticipant(participantId: number): Promise<ExecutionResult> {
+        // SELECT
+        //     `cp`.`id`,
+        //     `cp`.`teamName`,
+        //     `c`.`type`
+        // FROM
+        //     `championship_participant` `cp`
+        //         LEFT JOIN `championship` `c` ON `c`.`id` = `cp`.`championshipId`
+
+        const targetResult = await this.championshipParticipantRepository
+            .createQueryBuilder("cp")
+            .select("`cp`.`id`", "id")
+            .addSelect("`cp`.`teamName`", "teamName")
+            .addSelect("`c`.`type`", "type")
+            .leftJoin("championship", "c", "`c`.`id` = `cp`.`championshipId`")
+            .where("`cp`.`id` = :participantId", { participantId })
+            .getRawOne<{ id: string; teamName: string; type: "individual" | "team" }>();
+
+        if (!targetResult) {
+            return {
+                errors: ["해당 참가 정보를 찾을 수 없었습니다."],
+                succeeded: false,
+            };
+        }
+
+        if (targetResult.type === "team") {
+            await this.championshipParticipantRepository.delete({
+                teamName: targetResult.teamName,
+            });
+        } else {
+            await this.championshipParticipantRepository.delete({
+                id: participantId,
+            });
+        }
 
         return {
             errors: [],

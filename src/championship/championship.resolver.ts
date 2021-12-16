@@ -34,6 +34,16 @@ export class ChampionshipResolver {
         return this.championshipService.createChampionship(data);
     }
 
+    @Mutation(() => ExecutionResult)
+    public async deleteParticipant(@Args("participantId", { type: () => Int }) participantId: number) {
+        return this.championshipService.deleteParticipant(participantId);
+    }
+
+    @ResolveField(() => Int)
+    public async participantCount(@Root() championship: Championship) {
+        return this.championshipService.getParticipantCount(championship);
+    }
+
     @ResolveField(() => [ChampionshipParticipant])
     public async participants(@Root() championship: Championship) {
         return this.championshipService.findParticipantsByIds(championship.participantIds);
