@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-FROM node:16-alpine as builder
+FROM node:16-stretch-slim as builder
 
-RUN apk add --update --no-cache curl git openssh
+RUN apt-get update && apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev curl git openssh
 
 USER node
 WORKDIR /home/node
