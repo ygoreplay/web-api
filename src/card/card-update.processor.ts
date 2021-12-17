@@ -3,22 +3,48 @@ import * as fs from "fs-extra";
 import { createConnection, Repository } from "typeorm";
 import * as path from "path";
 import { nanoid } from "nanoid";
+import fetch from "node-fetch";
+import * as AdmZip from "adm-zip";
+import * as glob from "fast-glob";
 
 import { Octokit } from "@octokit/rest";
 
 import { Inject, Logger } from "@nestjs/common";
-import { OnQueueError, Process, Processor } from "@nestjs/bull";
+import { OnGlobalQueueError, Process, Processor } from "@nestjs/bull";
 import { InjectRepository } from "@nestjs/typeorm";
 
 import { CardService } from "@card/card.service";
 import { YGOProCard } from "@card/models/Card.sqlite";
 import { Text } from "@card/models/Text.model";
 import { Card } from "@card/models/Card.model";
-import { downloadFileFromUrl } from "@root/utils/net";
-import { isEntityUpdated, replaceEntity } from "@root/utils/cards";
+import { EdoCard } from "@card/models/edo-card.model";
+
+import { downloadFileFromUrl } from "@utils/net";
+import { isEntityUpdated, replaceEntity } from "@utils/cards";
+import { EdoText } from "@card/models/edo-text.model";
+
+const EDOPRO_CARD_DATABASE_PATH = path.join(process.cwd(), "./edo");
 
 @Processor("card-update")
 export class CardUpdateProcessor {
+    private static async readCardsFromDatabase(databasePath: string): Promise<YGOProCard[]> {
+        const connection = await createConnection({
+            type: "sqlite",
+            database: databasePath,
+            entities: [YGOProCard, Text],
+            name: "edo",
+        });
+
+        const repository = connection.getRepository(YGOProCard);
+        const allCards = await repository.find({
+            relations: ["text"],
+        });
+
+        await connection.close();
+
+        return allCards;
+    }
+
     private readonly octokit = new Octokit({
         auth: "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",
     });
@@ -27,9 +53,117 @@ export class CardUpdateProcessor {
 
     public constructor(
         @Inject(CardService) private readonly cardService: CardService,
+        @InjectRepository(EdoCard) private readonly edoCardRepository: Repository<EdoCard>,
+        @InjectRepository(EdoText) private readonly edoTextRepository: Repository<EdoText>,
         @InjectRepository(Card) private readonly cardRepository: Repository<Card>,
         @InjectRepository(Text) private readonly textRepository: Repository<Text>,
     ) {}
+
+    private async checkIfEdoProCardUpdateNeeded() {
+        if (!fs.existsSync(".edo-db-last-commit")) {
+            return true;
+        }
+
+        const savedCommitId = await fs.readFile(".edo-db-last-commit").then(b => b.toString());
+        const commits = await this.octokit.repos.listCommits({
+            owner: "JSY1728",
+            repo: "EDOPRO-Korean-CDB-TEST",
+        });
+
+        return savedCommitId !== commits.data[0].sha;
+    }
+    private async updateEdoProCardDatabase() {
+        if (fs.existsSync(EDOPRO_CARD_DATABASE_PATH)) {
+            fs.rmSync(EDOPRO_CARD_DATABASE_PATH, { force: true, recursive: true });
+        }
+
+        await fs.ensureDir(EDOPRO_CARD_DATABASE_PATH);
+
+        const updateNeeded = await this.checkIfEdoProCardUpdateNeeded();
+        if (!updateNeeded) {
+            return false;
+        }
+
+        this.logger.debug("Found updates for EDOPro card database, now we apply it into our server...");
+        await this.edoCardRepository.delete({});
+        await this.edoTextRepository.delete({});
+
+        const archiveBuffer = await fetch("https://github.com/JSY1728/EDOPRO-Korean-CDB-TEST/archive/refs/heads/master.zip").then(res => res.buffer());
+        const zip = new AdmZip(archiveBuffer);
+        const entries = zip.getEntries();
+        let index = 0;
+        for (const entry of entries) {
+            if (!entry.entryName.endsWith(".cdb")) {
+                continue;
+            }
+
+            const databaseBuffer = entry.getData();
+            await fs.writeFile(path.join(EDOPRO_CARD_DATABASE_PATH, `./${index.toString().padStart(2, "0")}.cdb`), databaseBuffer);
+
+            index++;
+        }
+
+        const edoCardDatabasePath = await glob("./edo/*.cdb");
+        let allCards: YGOProCard[] = [];
+        for (const databasePath of edoCardDatabasePath) {
+            const cards = await CardUpdateProcessor.readCardsFromDatabase(databasePath);
+            allCards.push(...cards);
+        }
+
+        allCards = _.uniqBy(allCards, c => c.id);
+        const originalCards = await this.cardService.findAll();
+        const originalCardMap = _.chain(originalCards)
+            .keyBy(c => c.id)
+            .mapValues()
+            .value();
+        const missingCards = allCards.filter(c => !originalCardMap[c.id] && Boolean(c.text?.name));
+
+        const addedCards = missingCards.map(c => {
+            const entity = this.edoCardRepository.create();
+            entity.id = c.id;
+            replaceEntity(entity, c);
+
+            return entity;
+        });
+        const addedTexts = missingCards.map(c => {
+            const entity = this.edoTextRepository.create();
+            entity.id = c.id;
+            replaceEntity(entity, c.text);
+
+            return entity;
+        });
+
+        const chunks = _.chunk(addedCards, 300);
+        const textChunks = _.chunk(addedTexts, 300);
+        let processed = 0;
+        for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const textChunk = textChunks[i];
+
+            await this.edoTextRepository.createQueryBuilder().insert().values(textChunk).execute();
+            await this.edoCardRepository.createQueryBuilder().insert().values(chunk).execute();
+
+            processed += chunk.length;
+
+            if (i % 4 === 0) {
+                if (chunks.length - 1 === i) {
+                    break;
+                }
+
+                this.logger.debug(`Installing EDOPro cards... (${processed}/${addedCards.length}) [${((processed / addedCards.length) * 100).toFixed(0)}%]`);
+            }
+        }
+
+        this.logger.debug(`Installing EDOPro cards... (${processed}/${addedCards.length}) [${((processed / addedCards.length) * 100).toFixed(0)}%]`);
+        this.logger.debug("Successfully installed EDOPro cards.");
+
+        const commits = await this.octokit.repos.listCommits({
+            owner: "JSY1728",
+            repo: "EDOPRO-Korean-CDB-TEST",
+        });
+
+        await fs.writeFile(".edo-db-last-commit", commits.data[0].sha);
+    }
 
     private async updateEntities(repository: Repository<YGOProCard | Text>) {
         const newEntities = await repository.find();
@@ -44,7 +178,6 @@ export class CardUpdateProcessor {
 
             return entity;
         });
-
         if (added.length > 0) {
             const chunks = _.chunk(added, 300);
             for (const chunk of chunks) {
@@ -143,10 +276,15 @@ export class CardUpdateProcessor {
 
     @Process("update")
     public async doUpdate() {
-        await this.updateCardDatabase();
+        try {
+            await this.updateCardDatabase();
+            await this.updateEdoProCardDatabase();
+        } catch (e) {
+            console.log(e);
+        }
     }
 
-    @OnQueueError()
+    @OnGlobalQueueError()
     public async onError(error: Error) {
         return console.error(error);
     }

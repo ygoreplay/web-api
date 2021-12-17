@@ -11,6 +11,8 @@ import { CardCropperController } from "@card/card-cropper.controller";
 
 import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
+import { EdoCard } from "@card/models/edo-card.model";
+import { EdoText } from "@card/models/edo-text.model";
 import { CardCropperItem } from "@card/models/card-cropper-item.model";
 
 import { DeckModule } from "@deck/deck.module";
@@ -21,7 +23,7 @@ import { BullModule } from "@nestjs/bull";
         BullModule.registerQueue({
             name: "card-update",
         }),
-        TypeOrmModule.forFeature([Card, Text, CardCropperItem]),
+        TypeOrmModule.forFeature([EdoCard, Card, Text, CardCropperItem, EdoText]),
         forwardRef(() => DeckModule),
     ],
     controllers: [CardCropperController],

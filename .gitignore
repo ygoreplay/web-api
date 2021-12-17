@@ -38,3 +38,5 @@ lerna-debug.log*
 .db-last-commit
 cards.cdb
 /lflist.conf
+/edo
+/.edo-db-last-commit

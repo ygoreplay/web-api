@@ -3,6 +3,8 @@ import { Card } from "@card/models/Card.model";
 import { Text } from "@card/models/Text.model";
 import { YGOProCard } from "@card/models/Card.sqlite";
 import { BanListDeclaration } from "@card/models/banlist-declaration.object";
+import { EdoCard } from "@card/models/edo-card.model";
+import { EdoText } from "@card/models/edo-text.model";
 
 export function isCardUpdated(currentCard: Card, newCard: YGOProCard) {
     return !(
@@ -42,7 +44,7 @@ export function isTextUpdated(currentText: Text, newText: Text) {
     );
 }
 
-export function replaceCard(currentCard: Card, newCard: YGOProCard) {
+export function replaceCard(currentCard: Card | EdoCard, newCard: YGOProCard) {
     currentCard.ot = newCard.ot;
     currentCard.alias = newCard.alias;
     currentCard._setcode = newCard._setcode;
@@ -57,7 +59,7 @@ export function replaceCard(currentCard: Card, newCard: YGOProCard) {
     return currentCard;
 }
 
-export function replaceText(currentText: Text, newText: Text) {
+export function replaceText(currentText: Text | EdoText, newText: Text | EdoText) {
     currentText.name = newText.name;
     currentText.desc = newText.desc;
     currentText.str1 = newText.str1;
@@ -80,10 +82,10 @@ export function replaceText(currentText: Text, newText: Text) {
     return currentText;
 }
 
-export function replaceEntity(current: Text | Card, _new: any) {
-    if (current instanceof Text && _new instanceof Text) {
+export function replaceEntity(current: Text | EdoCard | EdoText | Card, _new: any) {
+    if ((current instanceof Text || current instanceof EdoText) && (_new instanceof Text || _new instanceof EdoText)) {
         return replaceText(current, _new);
-    } else if (current instanceof Card && _new instanceof YGOProCard) {
+    } else if ((current instanceof Card || current instanceof EdoCard) && _new instanceof YGOProCard) {
         return replaceCard(current, _new);
     }
 }
