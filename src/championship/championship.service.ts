@@ -230,9 +230,11 @@ export class ChampionshipService {
         }
 
         if (targetResult.type === "team") {
-            await this.championshipParticipantRepository.delete({
-                teamName: targetResult.teamName,
-            });
+            await this.championshipParticipantRepository
+                .createQueryBuilder("cp")
+                .delete()
+                .where("`cp`.`teamName` = :teamName", { teamName: targetResult.teamName })
+                .andWhere("`cp`.`championshipId` = :championshipId", { championshipId: targetResult.id });
         } else {
             await this.championshipParticipantRepository.delete({
                 id: participantId,
