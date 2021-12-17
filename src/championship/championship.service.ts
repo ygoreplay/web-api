@@ -80,7 +80,31 @@ export class ChampionshipService {
                 errors: ["팀 이름 정보가 누락 되었습니다."],
                 succeeded: false,
             };
-        } else if (teamName && championship.type === ChampionshipType.Team) {
+        }
+
+        if (championship.type === ChampionshipType.Team) {
+            const allParticipants = await this.findParticipantsByIds(championship.participantIds);
+            const allTeamNames = _.chain(allParticipants)
+                .groupBy(p => p.teamName)
+                .keys()
+                .value();
+
+            if (allTeamNames.indexOf(teamName) >= 0) {
+                return {
+                    errors: ["이미 덱이 제출 된 팀 입니다. 주최자에게 문의 하세요."],
+                    succeeded: false,
+                };
+            }
+        } else if (championship.type === ChampionshipType.Individual) {
+            const allParticipants = await this.findParticipantsByIds(championship.participantIds);
+            const allNames = allParticipants.map(p => p.name);
+
+            if (allNames.indexOf(participantInputs[0].name) >= 0) {
+                return {
+                    errors: ["이미 덱이 제출 된 참가자 정보 입니다. 주최자에게 문의 하세요."],
+                    succeeded: false,
+                };
+            }
         }
 
         const cards = await this.cardService.findAll();
@@ -218,9 +242,10 @@ export class ChampionshipService {
             .select("`cp`.`id`", "id")
             .addSelect("`cp`.`teamName`", "teamName")
             .addSelect("`c`.`type`", "type")
+            .addSelect("`c`.`id`", "championshipId")
             .leftJoin("championship", "c", "`c`.`id` = `cp`.`championshipId`")
             .where("`cp`.`id` = :participantId", { participantId })
-            .getRawOne<{ id: string; teamName: string; type: "individual" | "team" }>();
+            .getRawOne<{ id: string; teamName: string; type: "individual" | "team"; championshipId: string }>();
 
         if (!targetResult) {
             return {
@@ -229,12 +254,15 @@ export class ChampionshipService {
             };
         }
 
+        console.log(participantId);
+
         if (targetResult.type === "team") {
             await this.championshipParticipantRepository
                 .createQueryBuilder("cp")
                 .delete()
-                .where("`cp`.`teamName` = :teamName", { teamName: targetResult.teamName })
-                .andWhere("`cp`.`championshipId` = :championshipId", { championshipId: targetResult.id });
+                .where("`teamName` = :teamName", { teamName: targetResult.teamName })
+                .andWhere("`championshipId` = :championshipId", { championshipId: targetResult.championshipId })
+                .execute();
         } else {
             await this.championshipParticipantRepository.delete({
                 id: participantId,
