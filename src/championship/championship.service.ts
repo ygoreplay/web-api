@@ -84,12 +84,13 @@ export class ChampionshipService {
         }
 
         const cards = await this.cardService.findAll();
+        const edoCards = await this.cardService.getAllEDOProCards();
         const participantDecks: ParticipantDeck[] = [];
         const errors: string[] = [];
         for (const p of participantInputs) {
             const file = await p.deckFile;
             const fileBuffer = await readStreamIntoBuffer(file.createReadStream());
-            const deck = parseDeckFileContent(fileBuffer.toString(), cards);
+            const deck = parseDeckFileContent(fileBuffer.toString(), cards, edoCards);
 
             if (deck.main.length < 40 || deck.extra.length < 15 || deck.side.length < 15) {
                 errors.push(
@@ -110,7 +111,11 @@ export class ChampionshipService {
             return { errors, succeeded: false };
         }
 
-        const cardMap = _.chain(cards).keyBy("id").mapValues().value();
+        const edoCardMap = _.chain(edoCards).keyBy("id").mapValues().value();
+        const cardMap = {
+            ...edoCardMap,
+            ..._.chain(cards).keyBy("id").mapValues().value(),
+        };
         const banListMap = convertBanListDeclarationToMap(this.cardService.getBanList(championship.banList));
         for (const p of participantDecks) {
             const allCardIds = getAllCardsFromRawDecks([p.deck]);

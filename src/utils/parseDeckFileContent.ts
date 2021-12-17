@@ -1,8 +1,9 @@
 import { RawDeck } from "@utils/types";
 
 import { Card } from "@card/models/Card.model";
+import { EdoCard } from "@card/models/edo-card.model";
 
-export function parseDeckFileContent(content: string, cards: Card[]): RawDeck {
+export function parseDeckFileContent(content: string, cards: Card[], edoCards: EdoCard[]): RawDeck {
     const lines = content
         .replace(/\r\n/g, "\n")
         .split("\n")
@@ -26,7 +27,7 @@ export function parseDeckFileContent(content: string, cards: Card[]): RawDeck {
         }
 
         const cardId = parseInt(line, 10);
-        const card = cards.find(card => card.id === cardId);
+        const card = cards.find(card => card.id === cardId) || edoCards.find(card => card.id === cardId);
         if (side) {
             result.side.push(cardId);
         } else {

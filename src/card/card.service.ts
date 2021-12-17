@@ -11,6 +11,7 @@ import { InjectQueue } from "@nestjs/bull";
 import { DeckService } from "@deck/deck.service";
 
 import { Card } from "@card/models/Card.model";
+import { EdoCard } from "@card/models/edo-card.model";
 import { Text } from "@card/models/Text.model";
 import { CardUsage } from "@card/models/card-usage.object";
 import { CardSuggestion } from "@card/models/card-suggestion.object";
@@ -30,6 +31,7 @@ export class CardService implements OnModuleInit {
         @InjectQueue("card-update") private readonly cardUpdateQueue: Queue,
         @InjectRepository(Card) private readonly cardRepository: Repository<Card>,
         @InjectRepository(Text) private readonly textRepository: Repository<Text>,
+        @InjectRepository(EdoCard) private readonly edoCardRepository: Repository<EdoCard>,
     ) {}
 
     public async onModuleInit() {
@@ -39,62 +41,11 @@ export class CardService implements OnModuleInit {
         await downloadFileFromUrl("https://raw.githubusercontent.com/Fluorohydride/ygopro/master/lflist.conf", banListFilePath);
 
         const fileContent = await fs.readFile(banListFilePath).then(buffer => buffer.toString());
-        const lines = fileContent.replace(/\r\n/g, "\n").split("\n");
-        const banListTitle = lines[0];
-        const banListItems = banListTitle
-            .replace(/[#\[]/g, "")
-            .split("]")
-            .filter(item => Boolean(item));
-        for (const banListItem of banListItems) {
-            this.banLists[banListItem] = new BanListDeclaration();
-        }
+        await this.installBanListDataFromContent(fileContent);
 
-        let currentBanListTitle = "";
-        for (const line of lines) {
-            if (line.startsWith("!")) {
-                currentBanListTitle = line.trim().replace("!", "");
-                continue;
-            }
-
-            if (line.startsWith("#")) {
-                continue;
-            }
-
-            if (!/^[0-9]/.test(line)) {
-                continue;
-            }
-
-            const [content] = line.split("--");
-            const [cardId, maxCardCount] = content
-                .trim()
-                .split(" ")
-                .map(token => parseInt(token, 10));
-
-            switch (maxCardCount) {
-                case 0:
-                    if (!this.banLists[currentBanListTitle].forbidden) {
-                        this.banLists[currentBanListTitle].forbidden = [];
-                    }
-
-                    this.banLists[currentBanListTitle].forbidden.push(cardId);
-                    break;
-
-                case 1:
-                    if (!this.banLists[currentBanListTitle].limit) {
-                        this.banLists[currentBanListTitle].limit = [];
-                    }
-
-                    this.banLists[currentBanListTitle].limit.push(cardId);
-                    break;
-
-                case 2:
-                    if (!this.banLists[currentBanListTitle].semiLimit) {
-                        this.banLists[currentBanListTitle].semiLimit = [];
-                    }
-
-                    this.banLists[currentBanListTitle].semiLimit.push(cardId);
-                    break;
-            }
+        if (fs.existsSync("./lflist.custom.conf")) {
+            const customBanListContent = await fs.readFile("./lflist.custom.conf").then(buffer => buffer.toString());
+            await this.installBanListDataFromContent(customBanListContent);
         }
     }
     public async count() {
@@ -218,5 +169,72 @@ export class CardService implements OnModuleInit {
         }
 
         return this.banLists[title];
+    }
+
+    public async getAllEDOProCards() {
+        return this.edoCardRepository.find();
+    }
+
+    private async installBanListDataFromContent(fileContent: string) {
+        const lines = fileContent
+            .replace(/\r\n/g, "\n")
+            .split("\n")
+            .filter(line => Boolean(line));
+        const banListTitle = lines[0];
+        const banListItems = banListTitle
+            .replace(/[#\[]/g, "")
+            .split("]")
+            .filter(item => Boolean(item));
+        for (const banListItem of banListItems) {
+            this.banLists[banListItem] = new BanListDeclaration();
+        }
+
+        let currentBanListTitle = "";
+        for (const line of lines) {
+            if (line.startsWith("!")) {
+                currentBanListTitle = line.trim().replace("!", "");
+                continue;
+            }
+
+            if (line.startsWith("#")) {
+                continue;
+            }
+
+            if (!/^[0-9]/.test(line)) {
+                continue;
+            }
+
+            const [content] = line.split("--");
+            const [cardId, maxCardCount] = content
+                .trim()
+                .split(" ")
+                .map(token => parseInt(token, 10));
+
+            switch (maxCardCount) {
+                case 0:
+                    if (!this.banLists[currentBanListTitle].forbidden) {
+                        this.banLists[currentBanListTitle].forbidden = [];
+                    }
+
+                    this.banLists[currentBanListTitle].forbidden.push(cardId);
+                    break;
+
+                case 1:
+                    if (!this.banLists[currentBanListTitle].limit) {
+                        this.banLists[currentBanListTitle].limit = [];
+                    }
+
+                    this.banLists[currentBanListTitle].limit.push(cardId);
+                    break;
+
+                case 2:
+                    if (!this.banLists[currentBanListTitle].semiLimit) {
+                        this.banLists[currentBanListTitle].semiLimit = [];
+                    }
+
+                    this.banLists[currentBanListTitle].semiLimit.push(cardId);
+                    break;
+            }
+        }
     }
 }
