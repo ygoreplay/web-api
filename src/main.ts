@@ -4,7 +4,7 @@ import { AppModule } from "./app.module";
 
 async function bootstrap() {
     const app = await NestFactory.create(AppModule);
-    app.use(graphqlUploadExpress());
+    app.use("/graphql", graphqlUploadExpress());
     await app.listen(3001);
 }
 
